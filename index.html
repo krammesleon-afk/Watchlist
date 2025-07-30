@@ -1,0 +1,743 @@
+﻿<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+<title>Watchlist: Universal Desktop & Mobile</title>
+<style>
+:root {
+  --bg-darkest: #17191b;
+  --bg-darker: #1c1f24;
+  --bg-dark: #212429;
+  --bg-medium: #23282e;
+  --bg-light: #272c33;
+  --text-color: #fff;
+  --card-bg: #23272b;
+  --accent-color: #1db954;
+  --active-nav: #28ce6b;
+  --section-watch: var(--bg-darkest);
+  --section-search: var(--bg-dark);
+  --section-popular: var(--bg-darker);
+  --section-ki: var(--bg-medium);
+  --section-set: var(--bg-light);
+}
+html.light-mode {
+  --bg-darkest: #ececec;
+  --bg-darker: #f7f9fa;
+  --bg-dark: #f4f4f7;
+  --bg-medium: #ebeef0;
+  --bg-light: #e3e7eb;
+  --text-color: #26282b;
+  --card-bg: #f8f9fc;
+  --accent-color: #16d76b;
+  --active-nav: #1bbd58;
+}
+body {
+  margin: 0; font-family: 'Segoe UI', Arial, sans-serif;
+  background: var(--bg-darkest) !important;
+  color: var(--text-color);
+  display: flex; min-height: 100vh;
+  box-sizing: border-box;
+  flex-direction: column;
+}
+.content {
+  flex-grow: 1;
+  padding: 18px 6px 74px 6px; /* unten Platz für Navleiste */
+  max-width: 1500px;
+  width: 100%;
+  margin: 0 auto;
+}
+nav {
+  position: fixed; left: 0; right: 0; bottom: 0;
+  height: 62px; width: 100vw;
+  background: #191d21;
+  border-top: 1.5px solid #222;
+  display: flex; flex-direction: row; justify-content: space-around; align-items: center;
+  z-index: 1000;
+}
+nav .menu-item {
+  flex: 1;
+  height: 100%;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  cursor: pointer;
+  font-size: 1.6em;
+  color: #bbb;
+  background: none; border: none; border-right: none;
+  transition: color 0.17s, background 0.14s;
+  outline: none; padding: 0;
+  font-weight: 600;
+}
+nav .menu-item.active,
+nav .menu-item:focus, nav .menu-item:active {
+  background: var(--active-nav);
+  color: #fff;
+}
+nav .menu-item span {
+  font-size: .71em; margin-top: 1.5px; font-weight: 500; display: block;
+}
+#sidebar-nav { user-select: none; }
+
+.section {
+  width: 100%; min-height:320px; padding:24px 3vw 12px 2vw;
+  border-radius: 16px; margin-bottom:17px; margin-top: 9px;
+}
+#watchlist.section { background: var(--section-watch);}
+#search.section { background: var(--section-search);}
+#popular.section { background: var(--section-popular);}
+#recommendations.section { background: var(--section-ki);}
+#settings.section { background: var(--section-set);}
+h1 { font-size: 1.26em; margin:0 0 7px 0; display: flex; align-items: center;}
+.filters { margin: 4px 0 11px 0; gap: 12px; flex-wrap:wrap; font-size: 1em;}
+.filters label {font-size: .97em;}
+input[type="file"] { margin-top: 7px;}
+
+.grid-list {
+  display: grid; gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(146px, 1fr));
+  width: 100%; margin-bottom: 10px;
+}
+.card {
+  background: var(--card-bg); border-radius: 13px; box-shadow: 0 2px 8px 0 #0002;
+  padding: 7px 4px 7px 4px;
+  display: flex; flex-direction: column; align-items: center;
+  min-height: 176px; min-width: 0; border: 2px solid transparent;
+  position: relative; font-size: 0.97em; margin: 0;
+}
+.card:focus-within, .card:active {
+  border: 2px solid var(--accent-color);
+  box-shadow: 0 0 12px 0 var(--accent-color);
+}
+.card img {
+  width: 82px; height: 120px;
+  border-radius: 7px; margin-bottom: 4px;
+  background: #222; box-shadow: 0 1px 4px #0003;
+}
+.card .info {flex:1;width:100%;text-align:center;display:flex;flex-direction:column;gap:2px;}
+.card h3 {margin:7px 0 2px 0;font-size:0.97em;line-height:1.14;}
+.stars { color: #f5c518; letter-spacing: 1px;}
+.small { font-size: 0.92em; color: #bbb;}
+.snackbar {
+  position: fixed; left: 50%; bottom: 76px;
+  padding: 12px 26px; background: var(--accent-color); color: #fff;
+  z-index: 9999; border-radius: 26px; font-size: .98em; font-weight: bold; letter-spacing: .6px;
+  box-shadow: 0 6px 23px 0 #0005; transform: translate(-50%, 0); opacity: 0;
+  pointer-events: none; animation: snackbarIn 200ms 1;
+}
+.snackbar.show { opacity: 1; pointer-events:auto; animation: snackbarIn 160ms 1;}
+@keyframes snackbarIn { from { opacity:0; bottom:68px;} to { opacity:1; bottom:76px;}}
+button, .card button {
+  background: var(--accent-color); color: #fff; border: none; border-radius: 4px;
+  padding: 6px 12px; margin: 3px 3px 3px 0; font-size: .98em; font-weight: 600;
+  transition: background 0.13s;
+}
+button:disabled { opacity: 0.70; background:#888; cursor: not-allowed;}
+button:hover:not(:disabled), .card button:active { background: #15913e; }
+.favorite { cursor: pointer; font-size: 1.15em; color: gold; margin-right: 5px;}
+.seenlabel { font-size:.91em; margin-left:3px;}
+input[type="checkbox"].seencb {accent-color: var(--accent-color);}
+.external-links {margin-top:6px;font-size:0.93em;}
+.external-links a { margin-right: 8px; }
+
+/* Info-Overlay */
+#info-overlay {
+  display:none; position: fixed; top:0; left:0; width:100vw; height:100vh;
+  background: rgba(0,0,0,.85); align-items: center; justify-content: center;
+  color: #fff; z-index: 2000;
+}
+#info-overlay > div {
+  background: var(--card-bg); color: var(--text-color);
+  border-radius: 14px; max-width: 98vw; max-height: 80vh;
+  padding: 14px 15px 21px 15px;
+  box-shadow: 0 0 16px var(--accent-color);
+  position: relative;
+  font-size: 1em;
+}
+#info-close-btn {
+  position:absolute; top:8px; right:12px;
+  background:none;border:none;color:var(--accent-color);font-size:1.25em;cursor:pointer;
+}
+#info-overlay h2 {font-size:1.13em;}
+#info-trailer-link {
+  margin-top:7px; color: var(--accent-color); font-weight: 700;
+  text-decoration: underline; display: none;
+}
+
+@media (min-width:700px) {
+  nav { flex-direction:column; top: 0; left: 0; bottom: unset; height: 100vh; width: 74px; border-top:none; border-right:1.5px solid #222;}
+  nav .menu-item { font-size:1.33em;}
+  nav .menu-item span { display: none;}
+  nav:hover { width: 180px;}
+  nav:hover .menu-item span {display: block;}
+  .content {padding:29px 32px 32px 32px;}
+}
+@media (max-width:420px) {
+  .card img { width:59px; height:84px;}
+}
+</style>
+</head>
+<body>
+<nav id="sidebar-nav" role="navigation" aria-label="Hauptnavigation">
+  <div class="menu-item active" data-section="watchlist" tabindex="0" title="Watchlist">📺 <span>Watchlist</span></div>
+  <div class="menu-item" data-section="search" tabindex="0" title="Suche">🔍 <span>Suche</span></div>
+  <div class="menu-item" data-section="popular" tabindex="0" title="Beliebt">⭐ <span>Beliebt</span></div>
+  <div class="menu-item" data-section="recommendations" tabindex="0" title="Empfehlungen">💡 <span>Empfehlungen</span></div>
+  <div class="menu-item" data-section="settings" tabindex="0" title="Einstellungen">⚙️ <span>Einstellungen</span></div>
+</nav>
+<main class="content" role="main">
+  <section id="watchlist" class="section active" tabindex="-1" aria-label="Watchlist">
+    <h1>Meine Watchlist
+      <button id="toggle-watchlist" aria-pressed="true" aria-label="Watchlist ein- oder ausklappen">▼</button>
+    </h1>
+    <div class="filters">
+      <label>Typ: <select id="watchlist-type-filter" onchange="renderWatchlist()">
+        <option value="">Alle</option><option value="movie">Film</option>
+        <option value="tv">Serie</option><option value="anime">Anime</option>
+      </select></label>
+      <label>Genre: <select id="watchlist-genre-filter" onchange="renderWatchlist()">
+        <option value="">Alle</option><option>Action</option><option>Fantasy</option>
+        <option>Drama</option><option>Comedy</option><option>Animation</option>
+        <option>Science Fiction</option><option>Thriller</option>
+        <option>Romance</option><option>Horror</option>
+      </select></label>
+      <label>Gesehen:
+        <select id="seen-filter-wl" onchange="renderWatchlist()">
+          <option value="">Alle</option>
+          <option value="seen">Schon gesehen</option>
+          <option value="notseen">Noch nicht gesehen</option>
+        </select>
+      </label>
+    </div>
+    <div id="watchlist-wrapper" tabindex="0" aria-live="polite" aria-atomic="true">
+      <div id="watchlist-content"></div>
+      <div id="watchlist-showmore" style="text-align:center;margin-top:10px;"></div>
+    </div>
+  </section>
+
+  <section id="search" class="section" tabindex="-1" aria-label="Suche">
+    <h1>Suche</h1>
+    <input type="text" id="search-input" placeholder="Titel eingeben" autocomplete="off" oninput="startTmdbSearchLive()" aria-label="Suche nach Filmen, Serien und Animes" />
+    <div class="filters">
+      <label>Typ: <select id="search-type-filter" onchange="startTmdbSearchLive()">
+        <option value="">Alle</option><option value="movie">Film</option>
+        <option value="tv">Serie</option><option value="anime">Anime</option>
+      </select></label>
+      <label>Genre: <select id="search-genre-filter" onchange="startTmdbSearchLive()">
+        <option value="">Alle</option><option>Action</option><option>Fantasy</option>
+        <option>Drama</option><option>Comedy</option><option>Animation</option>
+        <option>Science Fiction</option><option>Thriller</option>
+        <option>Romance</option><option>Horror</option>
+      </select></label>
+      <label>Gesehen:
+        <select id="seen-filter-search" onchange="renderLastSearch()">
+          <option value="">Alle</option>
+          <option value="seen">Schon gesehen</option>
+          <option value="notseen">Noch nicht gesehen</option>
+        </select>
+      </label>
+    </div>
+    <div id="search-results" aria-live="polite" aria-atomic="true"></div>
+  </section>
+
+  <section id="popular" class="section" tabindex="-1" aria-label="Beliebte Inhalte">
+    <h1>Beliebte Inhalte</h1>
+    <div class="filters">
+      <label>Typ-Filter: <select id="popular-type-filter" onchange="renderPopular()">
+        <option value="">Alle</option><option value="movie">Filme</option>
+        <option value="tv">Serien</option><option value="anime">Anime</option>
+      </select></label>
+      <label>Genre-Filter: <select id="popular-genre-filter" onchange="renderPopular()">
+        <option value="">Alle</option><option>Action</option><option>Fantasy</option>
+        <option>Drama</option><option>Comedy</option><option>Animation</option>
+        <option>Science Fiction</option><option>Thriller</option>
+        <option>Romance</option><option>Horror</option>
+      </select></label>
+      <label>Gesehen:
+        <select id="seen-filter-popular" onchange="renderPopular()">
+          <option value="">Alle</option>
+          <option value="seen">Schon gesehen</option>
+          <option value="notseen">Noch nicht gesehen</option>
+        </select>
+      </label>
+    </div>
+    <div id="popular-results" aria-live="polite" aria-atomic="true"></div>
+  </section>
+
+  <section id="recommendations" class="section" tabindex="-1" aria-label="Empfehlungen">
+    <h1>KI-Empfehlungen</h1>
+    <button id="refresh-recommendations" onclick="renderRecommendations(true)" style="float:right;margin-bottom:14px;">🔄 Empfehlungen aktualisieren</button>
+    <div id="recommendation-results" style="clear:both" aria-live="polite" aria-atomic="true"></div>
+  </section>
+
+  <section id="settings" class="section" tabindex="-1" aria-label="Einstellungen">
+    <h1>Einstellungen</h1>
+    <label>
+      <input type="checkbox" id="toggle-theme" onchange="toggleTheme()" /> Dark Mode aktivieren
+    </label>
+    <br />
+    <button onclick="exportWatchlist()">📤 Exportieren</button>
+    <input type="file" id="import-file" accept=".json" onchange="importWatchlist()" aria-label="Watchlist importieren" />
+    <div style="margin-top: 10px;">
+      🔗 <a href="https://www.werstreamt.es/" target="_blank" rel="noopener noreferrer">WerStreamt.es</a><br />
+      🔗 <a href="https://www.justwatch.com/de" target="_blank" rel="noopener noreferrer">JustWatch</a><br />
+      🔗 <a href="https://www.themoviedb.org/" target="_blank" rel="noopener noreferrer">TMDB</a>
+    </div>
+  </section>
+
+  <div id="snackbar" class="snackbar" role="alert" aria-live="assertive" aria-atomic="true"></div>
+</main>
+
+<!-- Info Overlay -->
+<div id="info-overlay" role="dialog" aria-modal="true" aria-labelledby="info-title" aria-describedby="info-overview">
+  <div>
+    <button id="info-close-btn" aria-label="Info schließen">×</button>
+    <h2 id="info-title">Titel</h2>
+    <p id="info-overview">Beschreibung</p>
+    <a id="info-trailer-link" href="#" target="_blank" rel="noopener noreferrer">▶ Trailer ansehen</a>
+  </div>
+</div>
+
+<script>
+const TMDB_API_KEY = "e4cb00c1487c8092dd235807deb98f28";
+const TMDB_IMG_BASE = "https://image.tmdb.org/t/p/w300";
+let watchlist = JSON.parse(localStorage.getItem('watchlist') || "[]");
+let lastSearchResults = {results:[], tmdbType:"multi"};
+const WATCHLIST_PREVIEW_COUNT = 10;
+let watchlistShowAll = false;
+
+const watchlistSection = document.getElementById('watchlist');
+const toggleWatchlistBtn = document.getElementById('toggle-watchlist');
+function setWatchlistVisibility(isVisible) {
+  if(isVisible) {
+    watchlistSection.classList.remove('closed');
+    toggleWatchlistBtn.setAttribute('aria-pressed', 'true');
+  } else {
+    watchlistSection.classList.add('closed');
+    toggleWatchlistBtn.setAttribute('aria-pressed', 'false');
+  }
+  localStorage.setItem('watchlistVisible', isVisible ? 'true' : 'false');
+}
+toggleWatchlistBtn.addEventListener('click', () => {
+  const currentlyVisible = !watchlistSection.classList.contains('closed');
+  setWatchlistVisibility(!currentlyVisible);
+});
+function initWatchlistVisibility() {
+  const stored = localStorage.getItem('watchlistVisible');
+  if(stored === 'false') setWatchlistVisibility(false);
+  else setWatchlistVisibility(true);
+}
+async function fixWatchlistEntries() {
+  let updated = false;
+  for(let i=0; i < watchlist.length; i++) {
+    const entry = watchlist[i];
+    if(!entry.title || entry.title === '' || entry.title === 'Unbekannt') {
+      try {
+        const tmdbType = entry.media_type === "anime" ? "tv" : (entry.media_type || entry.type || "movie");
+        const url = `https://api.themoviedb.org/3/${tmdbType}/${entry.id}?api_key=${TMDB_API_KEY}&language=de-DE`;
+        const res = await fetch(url);
+        const data = await res.json();
+        const title = data.title || data.name || 'Unbekannt';
+        watchlist[i].title = title;
+        watchlist[i].name = data.name || data.title || 'Unbekannt';
+        watchlist[i].genres_text = (data.genres || []).map(g => g.name).join(", ");
+        watchlist[i].poster_path = data.poster_path || '';
+        watchlist[i].vote_average = data.vote_average || 0;
+        updated = true;
+      } catch(e) {
+        console.warn("Fehler beim Aktualisieren Watchlist ID "+entry.id, e);
+      }
+    }
+  }
+  if(updated) {
+    localStorage.setItem('watchlist', JSON.stringify(watchlist));
+  }
+}
+
+function showSnackbar(msg) {
+  const el = document.getElementById('snackbar');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => { el.classList.remove('show'); }, 1800);
+}
+
+function formatType(type) {
+  if(type==="movie") return "Film";
+  if(type==="tv") return "Serie";
+  if(type==="anime") return "Anime";
+  return type||"";
+}
+function showStars(v) {
+  if(!v) return "☆☆☆☆☆";
+  const r = Math.round(v/2);
+  return "★".repeat(r)+"☆".repeat(5-r);
+}
+function guessGenres(item) {
+  const map = {28:"Action",16:"Animation",35:"Comedy",99:"Doku",18:"Drama",10751:"Family",14:"Fantasy",36:"History",27:"Horror",10402:"Music",9648:"Mystery",10749:"Romance",878:"Science Fiction",53:"Thriller",10770:"TV-Film",10752:"War",37:"Western"};
+  if(item.genre_ids) return item.genre_ids.map(g=>map[g]||"").filter(Boolean).join(", ");
+  if(item.genres) return item.genres.map(g=>g.name).join(", ");
+  return "";
+}
+function generateExternalSearchLinks(title) {
+  const enc = encodeURIComponent(title);
+  return `<div class="external-links">
+    <a href="https://s.to/search?query=${enc}" target="_blank" rel="noopener noreferrer">s.to</a>
+    <a href="https://aniworld.to/anime?search=${enc}" target="_blank" rel="noopener noreferrer">AniWorld</a>
+    <a href="https://bs.to/search?query=${enc}" target="_blank" rel="noopener noreferrer">bs.to</a>
+    <a href="https://filmepalast.to/suche?search=${enc}" target="_blank" rel="noopener noreferrer">Filmepalast</a>
+  </div>`;
+}
+
+function renderAsGrid(container, entries, options={}) {
+  container.innerHTML = '';
+  if (!entries.length) { container.innerHTML = "<i>Keine passenden Einträge.</i>"; return; }
+  const grid = document.createElement('div'); grid.className = "grid-list";
+  entries.forEach(item => {
+    const card = document.createElement("div");
+    card.className = "card";
+    const disableBtn = options.disableBtn && options.disableBtn(item);
+    let isSeen = !!item.seen;
+    const infoBtn = document.createElement("button");
+    infoBtn.textContent = "ℹ️ Info";
+    infoBtn.style.marginTop = "4px";
+    infoBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      showInfoOverlay(item);
+    });
+    card.innerHTML = `
+      <img src="${item.poster_path ? TMDB_IMG_BASE + item.poster_path : 'https://via.placeholder.com/100?text=No+Image'}"
+        alt="${item.title || item.name}" onerror="this.src='https://via.placeholder.com/100?text=No+Image'">
+      <div class="info">
+        <h3>${item.title || item.name || 'Unbekannt'}</h3>
+        <p class="small">Typ: ${formatType(item.media_type || item.type)}</p>
+        <div class="stars">${showStars(item.vote_average)}</div>
+        <div class="small">${item.genres_text || guessGenres(item)}</div>
+        ${options.showFav!==false && item.hasOwnProperty("favorite") ? `<span class="favorite" title="Favorit" onclick="toggleFavorite(${item.id}, '${item.media_type || item.type}')">${item.favorite ? "⭐" : "☆"}</span>` : ""}
+        <label class="seenlabel"><input type="checkbox" class="seencb" ${isSeen?"checked":""}
+         onchange="toggleSeen(${item.id},'${item.media_type||item.type}');event.stopPropagation();" /> Schon gesehen</label>
+        ${options.showRemove ? `<button onclick="removeFromWatchlist(${item.id}, '${item.media_type || item.type}')">🗑️ Entfernen</button>` : "" }
+        ${options.showAdd ?
+          `<button onclick="addToWatchlist(${item.id}, '${item.media_type || item.type}')" ${disableBtn ? 'disabled' : ''}>${disableBtn ? "Bereits in Watchlist" : "➕ Zur Watchlist"}</button>` : ""}
+        ${generateExternalSearchLinks(item.title || item.name)}
+      </div>`;
+    card.querySelector('.info').appendChild(infoBtn);
+    grid.appendChild(card);
+  });
+  container.appendChild(grid);
+}
+
+function renderWatchlist() {
+  const typeFilter = document.getElementById("watchlist-type-filter").value;
+  const genreFilter = document.getElementById("watchlist-genre-filter").value.trim().toLowerCase();
+  const seenFilter = document.getElementById("seen-filter-wl").value;
+  let filtered = watchlist.filter(item => {
+    if(typeFilter==="anime") {
+      if (!((item.media_type || item.type) === "tv" && (item.genres_text || "").toLowerCase().split(",").map(s=>s.trim()).includes("animation"))) return false;
+    } else if (typeFilter && (item.media_type || item.type) !== typeFilter) return false;
+    if(genreFilter) { const genres = (item.genres_text || "").toLowerCase().split(",").map(s => s.trim()); if(!genres.includes(genreFilter)) return false;}
+    if(seenFilter==="seen" && !item.seen) return false;
+    if(seenFilter==="notseen" && !!item.seen) return false;
+    return true;
+  });
+
+  let showBtnDiv = document.getElementById("watchlist-showmore");
+  let toShow = filtered;
+  if (!watchlistShowAll && filtered.length > WATCHLIST_PREVIEW_COUNT) {
+    toShow = filtered.slice(0, WATCHLIST_PREVIEW_COUNT);
+    showBtnDiv.innerHTML = `<button onclick="watchlistShowAll=true;renderWatchlist()">Mehr anzeigen (${filtered.length - WATCHLIST_PREVIEW_COUNT} weitere)</button>`;
+  } else if (filtered.length > WATCHLIST_PREVIEW_COUNT) {
+    showBtnDiv.innerHTML = `<button onclick="watchlistShowAll=false;renderWatchlist()">Weniger anzeigen</button>`;
+  } else {
+    showBtnDiv.innerHTML = "";
+  }
+  renderAsGrid(document.getElementById("watchlist-content"), toShow, { showFav:true, showRemove:true });
+  localStorage.setItem("watchlist", JSON.stringify(watchlist));
+}
+
+function renderLastSearch() {
+  const results = lastSearchResults.results||[];
+  const tmdbType = lastSearchResults.tmdbType||"multi";
+  const seenFilter = document.getElementById("seen-filter-search").value;
+  let filtered = results.map(it=>{
+    const wlIt = watchlist.find(w=>w.id===it.id&&(w.media_type||w.type)===(it.media_type||tmdbType));
+    return wlIt ? {...it, seen: wlIt.seen} : it;
+  });
+  if(seenFilter==="seen") filtered = filtered.filter(it=>!!it.seen);
+  if(seenFilter==="notseen") filtered = filtered.filter(it=>!it.seen);
+  renderAsGrid(document.getElementById("search-results"), filtered, {
+    showFav:false, showRemove:false, showAdd:true,
+    disableBtn: item => watchlist.some(w => w.id === item.id && (w.media_type || w.type) === (item.media_type || tmdbType))
+  });
+}
+function toggleFavorite(id, media_type) {
+  const item = watchlist.find(i => i.id === id && (i.media_type || i.type) === media_type);
+  if(item) { item.favorite = !item.favorite; renderWatchlist(); showSnackbar(item.favorite?"Als Favorit markiert!":"Favorit entfernt!"); if(isRecActive())renderRecommendations(); }
+}
+function toggleSeen(id, media_type){
+  const item = watchlist.find(i => i.id === id && (i.media_type || i.type) === media_type);
+  if(item) { item.seen = !item.seen; renderWatchlist(); showSnackbar(item.seen?"Als gesehen markiert!":"Markierung entfernt!"); if(isRecActive())renderRecommendations(); }
+  renderLastSearch(); renderPopular();
+}
+function removeFromWatchlist(id, media_type) {
+  watchlist = watchlist.filter(i => !(i.id === id && (i.media_type || i.type) === media_type));
+  renderWatchlist(); showSnackbar("Von Watchlist entfernt!"); if(isRecActive())renderRecommendations();
+}
+async function addToWatchlist(id, type) {
+  try {
+    const tmdbType = type === "anime" ? "tv" : type;
+    const url = `https://api.themoviedb.org/3/${tmdbType}/${id}?api_key=${TMDB_API_KEY}&language=de-DE`;
+    const res = await fetch(url);
+    const data = await res.json();
+    const title = data.title || data.name || 'Unbekannt';
+
+    if(!watchlist.find(w => w.id === data.id && (w.media_type || w.type) === type)) {
+      watchlist.push({
+        id: data.id,
+        title,
+        name: data.name || data.title || 'Unbekannt',
+        media_type: type,
+        type: type,
+        poster_path: data.poster_path || '',
+        vote_average: data.vote_average || 0,
+        genres_text: (data.genres || []).map(g => g.name).join(", "),
+        favorite: false,
+        seen: false
+      });
+      renderWatchlist();
+      showSnackbar("Zur Watchlist hinzugefügt!");
+      if(isRecActive()) renderRecommendations();
+    } else {
+      showSnackbar("Titel ist bereits in der Watchlist!");
+    }
+  } catch (error) {
+    console.error("Fehler beim Hinzufügen zur Watchlist:", error);
+    showSnackbar("Fehler beim Hinzufügen!");
+  }
+}
+let searchTimeout;
+async function startTmdbSearchLive() {
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(async () => {
+    const query = document.getElementById("search-input").value.trim();
+    const typeFilter = document.getElementById("search-type-filter").value;
+    const genreFilter = document.getElementById("search-genre-filter").value.trim().toLowerCase();
+    const container = document.getElementById("search-results");
+    container.innerHTML = "<i>Lade ...</i>";
+    if (!query) { container.innerHTML = "<i>Titel eingeben.</i>"; return; }
+    const tmdbType = typeFilter === "anime" ? "tv" : (typeFilter || "multi");
+    const url = `https://api.themoviedb.org/3/search/${tmdbType}?api_key=${TMDB_API_KEY}&language=de-DE&query=${encodeURIComponent(query)}`;
+    try {
+      const res = await fetch(url);
+      const data = await res.json();
+      let results = data.results || [];
+      if(typeFilter==="anime") results = results.filter(item => ((item.media_type === "tv" || tmdbType === "tv") && (item.genre_ids || []).includes(16)));
+      if(genreFilter) results = results.filter(item => { const genres=guessGenres(item).toLowerCase().split(",").map(s=>s.trim()); return genres.includes(genreFilter); });
+      lastSearchResults = {results, tmdbType};
+      renderLastSearch();
+    } catch { container.innerHTML = "<i>Fehler beim Laden.</i>"; }
+  }, 400);
+}
+async function renderPopular() {
+  const container = document.getElementById("popular-results");
+  const typeFilter = document.getElementById("popular-type-filter").value;
+  const genreFilter = document.getElementById("popular-genre-filter").value.trim().toLowerCase();
+  const seenFilter = document.getElementById("seen-filter-popular").value;
+  container.innerHTML = "<i>Lade ...</i>";
+  try {
+    let popularMovies=[], popularTV=[];
+    if(typeFilter==="movie"||typeFilter==="") {
+      let res = await fetch(`https://api.themoviedb.org/3/movie/top_rated?api_key=${TMDB_API_KEY}&language=de-DE&page=1`);
+      popularMovies=(await res.json()).results||[];
+    }
+    if(typeFilter==="tv"||typeFilter===""||typeFilter==="anime") {
+      let res = await fetch(`https://api.themoviedb.org/3/tv/top_rated?api_key=${TMDB_API_KEY}&language=de-DE&page=1`);
+      popularTV=(await res.json()).results||[];
+      if(typeFilter==="anime") popularTV=popularTV.filter(item=>(item.genre_ids||[]).includes(16));
+    }
+    let popularAll=typeFilter==="movie"?popularMovies :(typeFilter==="tv"||typeFilter==="anime")?popularTV :[...popularMovies,...popularTV];
+    if(genreFilter) popularAll=popularAll.filter(item=>{const genres=guessGenres(item).toLowerCase().split(",").map(s=>s.trim());return genres.includes(genreFilter);});
+    popularAll = popularAll.map(it=>{
+      const wlIt = watchlist.find(w=>w.id===it.id&&(w.media_type||w.type)===(it.media_type||typeFilter));
+      return wlIt ? {...it, seen: wlIt.seen} : it;
+    });
+    if(seenFilter==="seen") popularAll = popularAll.filter(it=>!!it.seen);
+    if(seenFilter==="notseen") popularAll = popularAll.filter(it=>!it.seen);
+    popularAll=popularAll.sort((a,b)=>(b.vote_average||0)-(a.vote_average||0)).slice(0,20);
+    renderAsGrid(container,popularAll,{showAdd:true,showFav:false,showRemove:false,disableBtn:item=>watchlist.some(w=>w.id===item.id&&(w.media_type||w.type)===(item.media_type||typeFilter))});
+  } catch { container.innerHTML = "<i>Fehler beim Laden.</i>"; }
+}
+function isRecActive() { return document.getElementById('recommendations').classList.contains('active'); }
+function pickRandom(arr, n) {
+  let copy = arr.slice();
+  for(let i=copy.length-1;i>0;i--){
+    let j = Math.floor(Math.random()*(i+1));
+    [copy[i],copy[j]] = [copy[j],copy[i]];
+  }
+  return copy.slice(0,n);
+}
+function renderRecommendations(forceRandomBasis=false) {
+  const container = document.getElementById('recommendation-results');
+  container.innerHTML = "<i>Analysiere Watchlist und suche passende Vorschläge ...</i>";
+  if(!watchlist.length) { container.innerHTML = "<i>Füge zuerst Titel zu deiner Watchlist hinzu!</i>"; return; }
+  let favs = watchlist.filter(w => w.favorite);
+  let candidateBase = [];
+  if(favs.length && !forceRandomBasis) {
+    candidateBase = pickRandom(favs, Math.min(5, favs.length));
+  } else if(watchlist.length > 6) {
+    candidateBase = pickRandom(watchlist, 5);
+  } else {
+    candidateBase = watchlist.slice(0,5);
+  }
+  let suggestions = {};
+  (async () => {
+    for(let entry of candidateBase) {
+      let type = entry.media_type || entry.type || "movie";
+      let id = entry.id;
+      let url = `https://api.themoviedb.org/3/${type}/${id}/recommendations?api_key=${TMDB_API_KEY}&language=de-DE&page=1`;
+      try {
+        let res = await fetch(url);
+        let data = await res.json();
+        let arr = data && data.results ? data.results : [];
+        for(let sug of arr) {
+          if(watchlist.some(w => w.id === sug.id && (w.media_type || w.type) === (sug.media_type || type))) continue;
+          if(!suggestions[sug.id]) suggestions[sug.id] = {...sug, score: 0};
+          suggestions[sug.id].score += entry.favorite ? 3 : 1;
+        }
+      } catch{}
+    }
+    let recommended = Object.values(suggestions).sort((a,b) =>
+      (b.score || 0) !== (a.score || 0) ? (b.score || 0) - (a.score || 0) : (b.vote_average || 0) - (a.vote_average || 0)
+    ).slice(0,15);
+    renderAsGrid(container, recommended, {
+      showAdd:true, showFav:false, showRemove:false,
+      disableBtn: item => watchlist.some(w => w.id === item.id && (w.media_type || w.type) === (item.media_type || item.type || "movie"))
+    });
+  })();
+}
+function exportWatchlist() {
+  const blob = new Blob([JSON.stringify(watchlist)], {type: "application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a"); a.href = url; a.download = "watchlist.json"; a.click();
+  URL.revokeObjectURL(url);
+}
+function importWatchlist() {
+  const file = document.getElementById("import-file").files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if(Array.isArray(data)) {
+        watchlist = data;
+        renderWatchlist();
+        if(isRecActive()) renderRecommendations();
+      }
+      showSnackbar("Watchlist importiert!");
+    } catch {
+      alert("Import fehlgeschlagen.");
+    }
+  };
+  reader.readAsText(file);
+}
+function toggleTheme() {
+  document.documentElement.classList.toggle('light-mode');
+  localStorage.setItem("theme", document.documentElement.classList.contains('light-mode') ? "light" : "");
+  showSnackbar(document.documentElement.classList.contains('light-mode') ? "Light Mode aktiviert!" : "Dark Mode aktiviert!");
+}
+if (localStorage.getItem("theme") === "light") {
+  document.documentElement.classList.add("light-mode");
+  window.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('toggle-theme').checked = true;
+  });
+}
+const navItems = Array.from(document.querySelectorAll('nav .menu-item'));
+const sectionIds = ["watchlist", "search", "popular", "recommendations", "settings"];
+navItems.forEach(item => {
+  item.addEventListener("click", function() {
+    navItems.forEach(x=>x.classList.remove('active'));
+    this.classList.add('active');
+    const tgt = this.getAttribute("data-section");
+    document.querySelectorAll(".section").forEach(s => s.classList.remove("active"));
+    const el = document.getElementById(tgt);
+    el.classList.add("active");
+    el.focus({preventScroll:true});
+    el.scrollIntoView({ behavior: "smooth", block: "start" });
+    if(tgt==="recommendations") renderRecommendations();
+    if(tgt==="watchlist") renderWatchlist();
+    if(tgt==="popular") renderPopular();
+  });
+  item.addEventListener("keydown", e => {
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); item.click(); }
+  });
+});
+let lastActiveIdx = 0;
+const sectionEls = sectionIds.map(id => document.getElementById(id));
+window.addEventListener("scroll", function() {
+  let pageOffset = window.innerHeight * 0.08;
+  let found = sectionEls.findIndex((section, i) =>
+    section.getBoundingClientRect().top - pageOffset <= 0 &&
+    section.getBoundingClientRect().bottom - pageOffset > 0
+  );
+  if(found === -1) found = lastActiveIdx;
+  if(found !== lastActiveIdx) {
+    navItems.forEach(x=>x.classList.remove('active'));
+    navItems[found].classList.add('active');
+    lastActiveIdx = found;
+  }
+});
+document.addEventListener('DOMContentLoaded', () => {
+  initWatchlistVisibility();
+  fixWatchlistEntries().then(() => {
+    renderWatchlist();
+    renderPopular(); // Beliebte Inhalte beim Laden
+  });
+});
+// Overlay-Info-Fenster:
+const infoOverlay = document.getElementById('info-overlay');
+const infoTitle = document.getElementById('info-title');
+const infoOverview = document.getElementById('info-overview');
+const infoTrailerLink = document.getElementById('info-trailer-link');
+const infoCloseBtn = document.getElementById('info-close-btn');
+
+infoCloseBtn.addEventListener('click', () => {
+  infoOverlay.style.display = 'none';
+  document.body.classList.remove('overlay-open');
+});
+infoOverlay.addEventListener('click', e => {
+  if (e.target === infoOverlay) {
+    infoOverlay.style.display = 'none';
+    document.body.classList.remove('overlay-open');
+  }
+});
+async function showInfoOverlay(item) {
+  infoTitle.textContent = item.title || item.name || "Unbekannt";
+  infoOverview.textContent = "Lade Beschreibung...";
+  infoTrailerLink.style.display = 'none';
+  infoOverlay.style.display = 'flex';
+  document.body.classList.add('overlay-open');
+  try {
+    const type = (item.media_type || item.type || 'movie') === "anime" ? "tv" : (item.media_type || item.type || "movie");
+    const urlDetails = `https://api.themoviedb.org/3/${type}/${item.id}?api_key=${TMDB_API_KEY}&language=de-DE`;
+    const resDetails = await fetch(urlDetails);
+    const details = await resDetails.json();
+    infoOverview.textContent = details.overview || "Keine Beschreibung verfügbar.";
+    const urlVideos = `https://api.themoviedb.org/3/${type}/${item.id}/videos?api_key=${TMDB_API_KEY}&language=de-DE`;
+    const resVideos = await fetch(urlVideos);
+    const videos = await resVideos.json();
+    if(videos && videos.results && videos.results.length) {
+      const trailer = videos.results.find(v => v.type.toLowerCase() === "trailer" && v.site.toLowerCase() === "youtube");
+      if(trailer){
+        infoTrailerLink.href = `https://www.youtube.com/watch?v=${trailer.key}`;
+        infoTrailerLink.style.display = 'inline-block';
+      } else {
+        infoTrailerLink.style.display = 'none';
+      }
+    } else {
+      infoTrailerLink.style.display = 'none';
+    }
+  } catch(e) {
+    infoOverview.textContent = "Fehler beim Laden der Details.";
+    infoTrailerLink.style.display = 'none';
+  }
+}
+</script>
+</body>
+</html>
