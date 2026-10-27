@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Registrierung - Watchlist</title>
+<style>
+:root {
+  /* Moderne Farbpalette */
+  --bg-primary: #0e0f14;
+  --bg-secondary: #14161d;
+  --bg-tertiary: #1a1d27;
+  --bg-surface: #20242f;
+  --bg-elevated: #262a37;
+  --text-primary: #ffffff;
+  --text-secondary: #a1a8b6;
+  --text-muted: #6b7280;
+  --accent-primary: #6366f1;
+  --accent-secondary: #a855f7;
+  --accent-success: #10b981;
+  --accent-warning: #f59e0b;
+  --accent-error: #ef4444;
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-medium: rgba(255, 255, 255, 0.12);
+  --shadow-small: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-medium: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-large: 0 8px 32px rgba(0, 0, 0, 0.5);
+  --radius-small: 8px;
+  --radius-medium: 12px;
+  --radius-large: 16px;
+  --radius-xl: 24px;
+}
+
+html.light-mode {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8f9fa;
+  --bg-tertiary: #f1f3f4;
+  --bg-surface: #ffffff;
+  --bg-elevated: #ffffff;
+  --text-primary: #1f2937;
+  --text-secondary: #4b5563;
+  --text-muted: #9ca3af;
+  --border-subtle: rgba(0, 0, 0, 0.06);
+  --border-medium: rgba(0, 0, 0, 0.1);
+  --shadow-small: 0 1px 3px rgba(0, 0, 0, 0.1);
+  --shadow-medium: 0 4px 12px rgba(0, 0, 0, 0.15);
+  --shadow-large: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
+  background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+  color: var(--text-primary);
+  display: flex;
+  height: 100vh;
+  justify-content: center;
+  align-items: center;
+  line-height: 1.6;
+  font-feature-settings: "liga" 1, "kern" 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Subtle animated background */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: 
+    radial-gradient(circle at 80% 20%, rgba(99, 102, 241, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 20% 80%, rgba(139, 92, 246, 0.08) 0%, transparent 50%);
+  animation: subtleFloat 20s ease-in-out infinite;
+  z-index: -1;
+  pointer-events: none;
+}
+
+@keyframes subtleFloat {
+  0%, 100% { transform: scale(1) rotate(0deg); opacity: 0.8; }
+  50% { transform: scale(1.05) rotate(2deg); opacity: 1; }
+}
+
+#register-section {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(25px) saturate(180%);
+  padding: 32px 40px;
+  border-radius: var(--radius-large);
+  border: 1px solid var(--border-medium);
+  box-shadow: 
+    var(--shadow-large),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  max-width: 420px;
+  width: 100%;
+  box-sizing: border-box;
+  position: relative;
+  overflow: hidden;
+  animation: fadeInUp 0.6s ease-out;
+}
+
+#register-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #4f46e5 20%, #7c3aed 50%, #a855f7 80%, transparent);
+  opacity: 0.8;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+#register-section h2 {
+  margin: 0 0 32px 0;
+  font-weight: 700;
+  font-size: 1.8em;
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #a855f7 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-align: center;
+  letter-spacing: -0.02em;
+  position: relative;
+}
+
+#register-section h2::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 2px;
+  background: linear-gradient(90deg, #4f46e5 0%, #7c3aed 50%, #a855f7 100%);
+  border-radius: 1px;
+}
+
+#register-section input[type="text"],
+#register-section input[type="email"],
+#register-section input[type="password"] {
+  width: 100%;
+  padding: 14px 16px;
+  margin: 0 0 20px 0;
+  border-radius: var(--radius-small);
+  border: 1px solid var(--border-medium);
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  color: var(--text-primary);
+  font-size: 1em;
+  box-sizing: border-box;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-family: inherit;
+}
+
+#register-section input:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+#register-section input::placeholder {
+  color: var(--text-muted);
+  opacity: 0.7;
+}
+
+/* Input Validation Styles */
+#register-section input.valid {
+  border-color: var(--accent-success);
+  background: rgba(16, 185, 129, 0.05);
+}
+
+#register-section input.invalid {
+  border-color: var(--accent-error);
+  background: rgba(239, 68, 68, 0.05);
+}
+
+#register-section button {
+  width: 100%;
+  padding: 14px 0;
+  background: linear-gradient(135deg, #4f46e5 0%, #6366f1 25%, #7c3aed 50%, #8b5cf6 75%, #a855f7 100%);
+  border: none;
+  border-radius: var(--radius-small);
+  font-weight: 600;
+  font-size: 1em;
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+  position: relative;
+  overflow: hidden;
+  letter-spacing: 0.3px;
+  font-family: inherit;
+}
+
+#register-section button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.5s ease;
+}
+
+#register-section button:hover::before {
+  left: 100%;
+}
+
+#register-section button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4);
+  background: linear-gradient(135deg, #6366f1 0%, #7c3aed 25%, #8b5cf6 50%, #a855f7 75%, #c084fc 100%);
+}
+
+#register-section button:active {
+  transform: translateY(0);
+}
+
+#register-section button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+#register-message {
+  min-height: 1.3em;
+  margin: 20px 0 0 0;
+  text-align: center;
+  font-weight: 500;
+  padding: 8px;
+  border-radius: var(--radius-small);
+  transition: all 0.3s ease;
+  font-size: 0.9em;
+}
+
+#register-message.success {
+  color: var(--accent-success);
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+#register-message.error {
+  color: var(--accent-error);
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+/* Password Requirements */
+.password-requirements {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: var(--radius-small);
+  padding: 12px;
+  margin: -10px 0 20px 0;
+  font-size: 0.8em;
+  display: none;
+}
+
+.password-requirements.show {
+  display: block;
+}
+
+.requirement {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0;
+  color: var(--text-muted);
+  transition: color 0.3s ease;
+}
+
+.requirement.met {
+  color: var(--accent-success);
+}
+
+.requirement-icon {
+  font-size: 0.8em;
+}
+
+#back-to-login {
+  margin-top: 24px;
+  display: block;
+  text-align: center;
+  color: var(--text-secondary);
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 500;
+  padding: 8px;
+  border-radius: var(--radius-small);
+}
+
+#back-to-login:hover {
+  color: var(--accent-primary);
+  background: rgba(99, 102, 241, 0.05);
+  transform: translateY(-1px);
+}
+
+/* Theme Toggle Button */
+.theme-toggle {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  font-size: 1.2em;
+}
+
+.theme-toggle:hover {
+  background: rgba(99, 102, 241, 0.1);
+  transform: scale(1.1);
+}
+
+/* Loading state */
+.loading {
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.loading::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 20px;
+  height: 20px;
+  margin: -10px 0 0 -10px;
+  border: 2px solid transparent;
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Mobile Responsive */
+@media (max-width: 480px) {
+  body {
+    padding: 20px;
+  }
+  
+  #register-section {
+    padding: 24px 20px;
+    margin: 0;
+    border-radius: var(--radius-medium);
+  }
+  
+  #register-section h2 {
+    font-size: 1.5em;
+    margin-bottom: 24px;
+  }
+  
+  #register-section input {
+    padding: 12px 14px;
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+  
+  .theme-toggle {
+    top: 15px;
+    right: 15px;
+    width: 35px;
+    height: 35px;
+  }
+}
+
+/* Light mode styles */
+html.light-mode #register-section {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid var(--border-medium);
+}
+
+html.light-mode #register-section input {
+  background: rgba(0, 0, 0, 0.02);
+  border: 1px solid var(--border-medium);
+}
+
+html.light-mode #register-section input:focus {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+/* Enhanced Glassmorphism Effects */
+@supports (backdrop-filter: blur(10px)) {
+  #register-section {
+    backdrop-filter: blur(25px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 
+      var(--shadow-large),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+  }
+}
+</style>
+
+<!-- Halo-Design der Startseite für die Anmelde-Ansicht -->
+<link rel="stylesheet" href="auth-theme.css">
+<script src="auth-theme.js"></script>
+
+<!-- Icon-Set (ersetzt die Emojis der Oberfläche) -->
+<link rel="stylesheet" href="/icons.css">
+<script src="/icons.js" defer></script>
+</head>
+<body>
+
+<!-- Theme Toggle Button -->
+<button class="theme-toggle" onclick="toggleTheme()" aria-label="Theme wechseln">
+  <span id="theme-icon">🌙</span>
+</button>
+
+<section id="register-section" aria-label="Registrierungsformular">
+  <h2>Registrieren</h2>
+  
+  <input id="reg-username" type="text" placeholder="Benutzername" autocomplete="username" aria-label="Benutzername" required />
+  
+  <input id="reg-email" type="email" placeholder="E-Mail-Adresse" autocomplete="email" aria-label="E-Mail-Adresse" required />
+  
+  <input id="reg-password" type="password" placeholder="Passwort" autocomplete="new-password" aria-label="Passwort" required />
+  
+  <!-- Password Requirements -->
+  <div id="password-requirements" class="password-requirements">
+    <div class="requirement" id="req-length">
+      <span class="requirement-icon">⭕</span>
+      <span>Mindestens 6 Zeichen</span>
+    </div>
+    <div class="requirement" id="req-letter">
+      <span class="requirement-icon">⭕</span>
+      <span>Mindestens ein Buchstabe</span>
+    </div>
+    <div class="requirement" id="req-number">
+      <span class="requirement-icon">⭕</span>
+      <span>Mindestens eine Zahl</span>
+    </div>
+  </div>
+  
+  <input id="reg-password-confirm" type="password" placeholder="Passwort bestätigen" autocomplete="new-password" aria-label="Passwort bestätigen" required />
+  
+  <button id="register-btn">Registrieren</button>
+  
+  <p id="register-message" aria-live="polite" aria-atomic="true"></p>
+  
+  <a id="back-to-login" href="index.html">← Zurück zum Login</a>
+</section>
+
+<script>
+  const elems = {
+    username: document.getElementById('reg-username'),
+    email: document.getElementById('reg-email'),
+    password: document.getElementById('reg-password'),
+    passwordConfirm: document.getElementById('reg-password-confirm'),
+    registerBtn: document.getElementById('register-btn'),
+    message: document.getElementById('register-message'),
+    passwordRequirements: document.getElementById('password-requirements')
+  };
+
+  // Theme Toggle Funktion
+  function toggleTheme() {
+    const html = document.documentElement;
+    const themeIcon = document.getElementById('theme-icon');
+    
+    if (html.classList.contains('light-mode')) {
+      html.classList.remove('light-mode');
+      themeIcon.textContent = '🌙';
+      localStorage.setItem('theme', 'dark');
+    } else {
+      html.classList.add('light-mode');
+      themeIcon.textContent = '☀️';
+      localStorage.setItem('theme', 'light');
+    }
+  }
+
+  // Theme beim Laden setzen
+  function initTheme() {
+    const savedTheme = localStorage.getItem('theme');
+    const themeIcon = document.getElementById('theme-icon');
+    
+    if (savedTheme === 'light') {
+      document.documentElement.classList.add('light-mode');
+      themeIcon.textContent = '☀️';
+    }
+  }
+
+  // Email Validation
+  function isValidEmail(email) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  }
+
+  // Password Validation
+  function validatePassword(password) {
+    const requirements = {
+      length: password.length >= 6,
+      letter: /[a-zA-Z]/.test(password),
+      number: /\d/.test(password)
+    };
+
+    // Update UI
+    updateRequirement('req-length', requirements.length);
+    updateRequirement('req-letter', requirements.letter);
+    updateRequirement('req-number', requirements.number);
+
+    return Object.values(requirements).every(req => req);
+  }
+
+  function updateRequirement(id, met) {
+    const element = document.getElementById(id);
+    const icon = element.querySelector('.requirement-icon');
+    
+    if (met) {
+      element.classList.add('met');
+      icon.textContent = '✅';
+    } else {
+      element.classList.remove('met');
+      icon.textContent = '⭕';
+    }
+  }
+
+  // Input Event Listeners
+  elems.username.addEventListener('input', () => {
+    const username = elems.username.value.trim();
+    if (username.length >= 3) {
+      elems.username.classList.add('valid');
+      elems.username.classList.remove('invalid');
+    } else if (username.length > 0) {
+      elems.username.classList.add('invalid');
+      elems.username.classList.remove('valid');
+    } else {
+      elems.username.classList.remove('valid', 'invalid');
+    }
+  });
+
+  elems.email.addEventListener('input', () => {
+    const email = elems.email.value.trim();
+    if (email.length > 0) {
+      if (isValidEmail(email)) {
+        elems.email.classList.add('valid');
+        elems.email.classList.remove('invalid');
+      } else {
+        elems.email.classList.add('invalid');
+        elems.email.classList.remove('valid');
+      }
+    } else {
+      elems.email.classList.remove('valid', 'invalid');
+    }
+  });
+
+  elems.password.addEventListener('focus', () => {
+    elems.passwordRequirements.classList.add('show');
+  });
+
+  elems.password.addEventListener('input', () => {
+    const password = elems.password.value;
+    const isValid = validatePassword(password);
+    
+    if (password.length > 0) {
+      if (isValid) {
+        elems.password.classList.add('valid');
+        elems.password.classList.remove('invalid');
+      } else {
+        elems.password.classList.add('invalid');
+        elems.password.classList.remove('valid');
+      }
+    } else {
+      elems.password.classList.remove('valid', 'invalid');
+    }
+
+    // Validate confirm password if it has content
+    if (elems.passwordConfirm.value.length > 0) {
+      validatePasswordConfirm();
+    }
+  });
+
+  elems.passwordConfirm.addEventListener('input', validatePasswordConfirm);
+
+  function validatePasswordConfirm() {
+    const password = elems.password.value;
+    const confirm = elems.passwordConfirm.value;
+    
+    if (confirm.length > 0) {
+      if (password === confirm && password.length > 0) {
+        elems.passwordConfirm.classList.add('valid');
+        elems.passwordConfirm.classList.remove('invalid');
+      } else {
+        elems.passwordConfirm.classList.add('invalid');
+        elems.passwordConfirm.classList.remove('valid');
+      }
+    } else {
+      elems.passwordConfirm.classList.remove('valid', 'invalid');
+    }
+  }
+
+  async function register() {
+    // Reset message styling
+    elems.message.className = '';
+    elems.message.textContent = '';
+    
+    const username = elems.username.value.trim();
+    const email = elems.email.value.trim();
+    const password = elems.password.value;
+    const passwordConfirm = elems.passwordConfirm.value;
+    
+    // Validation
+    if (!username || username.length < 3) {
+      elems.message.className = 'error';
+      elems.message.textContent = 'Benutzername muss mindestens 3 Zeichen lang sein.';
+      return;
+    }
+
+    if (!email || !isValidEmail(email)) {
+      elems.message.className = 'error';
+      elems.message.textContent = 'Bitte gültige E-Mail-Adresse eingeben.';
+      return;
+    }
+
+    if (!password || !validatePassword(password)) {
+      elems.message.className = 'error';
+      elems.message.textContent = 'Passwort erfüllt nicht alle Anforderungen.';
+      return;
+    }
+
+    if (password !== passwordConfirm) {
+      elems.message.className = 'error';
+      elems.message.textContent = 'Passwörter stimmen nicht überein.';
+      return;
+    }
+
+    // Loading state
+    elems.registerBtn.classList.add('loading');
+    elems.registerBtn.textContent = '';
+    
+    try {
+      const res = await fetch('/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, email, password }),
+      });
+      
+      if (!res.ok) {
+        const errData = await res.json();
+        elems.message.className = 'error';
+        elems.message.textContent = errData.msg || 'Registrierung fehlgeschlagen.';
+        return;
+      }
+      
+      elems.message.className = 'success';
+      elems.message.textContent = 'Registrierung erfolgreich! Du wirst zum Login weitergeleitet...';
+      setTimeout(() => { window.location.href = 'index.html'; }, 2000);
+      
+    } catch (err) {
+      elems.message.className = 'error';
+      elems.message.textContent = 'Netzwerkfehler oder Server nicht erreichbar.';
+    } finally {
+      // Remove loading state
+      elems.registerBtn.classList.remove('loading');
+      elems.registerBtn.textContent = 'Registrieren';
+    }
+  }
+
+  // Event Listeners
+  elems.registerBtn.addEventListener('click', register);
+  elems.username.addEventListener('keydown', e => { if(e.key === 'Enter') register(); });
+  elems.email.addEventListener('keydown', e => { if(e.key === 'Enter') register(); });
+  elems.password.addEventListener('keydown', e => { if(e.key === 'Enter') register(); });
+  elems.passwordConfirm.addEventListener('keydown', e => { if(e.key === 'Enter') register(); });
+
+  // Initialize theme on page load
+  initTheme();
+</script>
+
+</body>
+</html>

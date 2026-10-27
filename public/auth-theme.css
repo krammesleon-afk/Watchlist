@@ -1,0 +1,294 @@
+/* =============================================================
+   Halo-Design für Login, Registrierung und Passwort-Reset.
+   Übernimmt Palette und Hintergrund der Startseite (landing.html).
+
+   Aktiv, sobald <html> die Klasse "auth-halo" trägt. Auf der
+   Watchlist-Seite wird die Klasse nach dem Login wieder entfernt,
+   damit die App ihr eigenes Indigo-Design behält.
+
+   Der Hell/Dunkel-Umschalter der Seiten bleibt erhalten:
+   html.light-mode liefert die warme helle Variante.
+   ============================================================= */
+
+html.auth-halo {
+  /* Palette der Startseite */
+  --halo-bg: #131110;
+  --halo-bg-2: #1c1815;
+  --halo-a: #f6a24c;
+  --halo-b: #ef5da8;
+  --halo-glass: rgba(255, 255, 255, 0.055);
+  --halo-glass-border: rgba(244, 237, 228, 0.14);
+  /* Stärke folgt dem Regler der Startseite (--bg-dim, Standard 0.8) */
+  --halo-scrim: linear-gradient(160deg,
+    rgba(19, 17, 16, calc(0.97 * var(--bg-dim, 0.8))) 0%,
+    rgba(19, 17, 16, calc(0.75 * var(--bg-dim, 0.8))) 60%,
+    rgba(19, 17, 16, calc(1.06 * var(--bg-dim, 0.8))) 100%);
+
+  /* Vorhandene Variablen der Seiten auf die Startseiten-Palette umbiegen,
+     damit alle bestehenden Regeln automatisch mitziehen. */
+  --bg-primary: #131110;
+  --bg-secondary: #1c1815;
+  --bg-tertiary: #221d19;
+  --bg-surface: rgba(0, 0, 0, 0.28);
+  --bg-elevated: rgba(255, 255, 255, 0.06);
+  --text-primary: #f4ede4;
+  --text-color: #f4ede4;
+  --text-secondary: #b9ada0;
+  --text-muted: #7c7268;
+  --accent-primary: #f6a24c;
+  --accent-secondary: #ef5da8;
+  --accent-color: #f6a24c;
+  --accent-success: #6bcf7f;
+  --accent-error: #ef5d5d;
+  --gradient-accent: linear-gradient(120deg, #f6a24c, #ef5da8);
+  --border-subtle: rgba(244, 237, 228, 0.10);
+  --border-medium: rgba(244, 237, 228, 0.16);
+  --shadow-medium: 0 8px 24px rgba(0, 0, 0, 0.4);
+  --shadow-large: 0 24px 60px rgba(0, 0, 0, 0.55);
+  --radius-large: 20px;
+}
+
+/* Helle Variante – warmer Sand statt kaltem Weiß */
+html.auth-halo.light-mode {
+  --halo-bg: #fdf7f0;
+  --halo-bg-2: #f6e9dc;
+  --halo-scrim: linear-gradient(160deg,
+    rgba(253, 247, 240, calc(1.02 * var(--bg-dim, 0.8))) 0%,
+    rgba(253, 247, 240, calc(0.85 * var(--bg-dim, 0.8))) 60%,
+    rgba(246, 233, 220, calc(1.1 * var(--bg-dim, 0.8))) 100%);
+  --halo-glass: rgba(255, 255, 255, 0.55);
+  --halo-glass-border: rgba(42, 33, 27, 0.12);
+
+  --bg-primary: #fdf7f0;
+  --bg-secondary: #f6e9dc;
+  --bg-tertiary: #f1e2d3;
+  --bg-surface: rgba(255, 255, 255, 0.72);
+  --bg-elevated: rgba(255, 255, 255, 0.85);
+  --text-primary: #2a211b;
+  --text-color: #2a211b;
+  --text-secondary: #6b5b4d;
+  --text-muted: #9a8877;
+  --accent-primary: #d97b1f;
+  --accent-secondary: #d94b8c;
+  --accent-color: #d97b1f;
+  --gradient-accent: linear-gradient(120deg, #e08a2c, #e0559a);
+  --border-subtle: rgba(42, 33, 27, 0.10);
+  --border-medium: rgba(42, 33, 27, 0.16);
+  --shadow-medium: 0 8px 24px rgba(90, 62, 40, 0.12);
+  --shadow-large: 0 22px 50px rgba(90, 62, 40, 0.18);
+}
+
+/* ===== Hintergrund: Wallpaper + Abdunklung (wie auf der Startseite) =====
+   --wallpaper wird per Skript aus dem gespeicherten eigenen Hintergrundbild
+   gesetzt; ohne eigenes Bild greift das Standardbild. */
+html.auth-halo::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -5;
+  background-image: var(--halo-scrim), var(--wallpaper, url('/img/default-bg.png'));
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  pointer-events: none;
+}
+
+/* ===== Halo: sanftes Sonnenuntergangs-Glimmen darüber ===== */
+html.auth-halo::after {
+  content: "";
+  position: fixed;
+  inset: -10%;
+  z-index: -4;
+  background:
+    radial-gradient(circle at 15% 0%, rgba(246, 162, 76, 0.20), transparent 45%),
+    radial-gradient(circle at 90% 20%, rgba(239, 93, 168, 0.16), transparent 42%);
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html.auth-halo::after { animation: haloFloat 28s ease-in-out infinite alternate; }
+}
+@keyframes haloFloat {
+  0% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(-2%, 2%, 0) scale(1.04); }
+  100% { transform: translate3d(2%, -1.5%, 0) scale(1); }
+}
+
+/* Alte Seiten-Hintergründe neutralisieren, damit nur der Halo wirkt */
+html.auth-halo body {
+  background: transparent;
+  color: var(--text-primary);
+}
+html.auth-halo body::before {
+  background: none;
+  animation: none;
+}
+
+/* ===== Karten: Login, Registrierung, Passwort-Reset ===== */
+html.auth-halo #auth-section,
+html.auth-halo #register-section,
+html.auth-halo #reset-section {
+  /* Echtes Glas: der Hintergrund scheint durch, wie bei den Widgets
+     der Startseite – nur unscharf und leicht aufgehellt. */
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.035));
+  border: 1px solid var(--halo-glass-border);
+  border-radius: var(--radius-large);
+  box-shadow: var(--shadow-large);
+  backdrop-filter: blur(24px) saturate(150%);
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
+}
+html.auth-halo.light-mode #auth-section,
+html.auth-halo.light-mode #register-section,
+html.auth-halo.light-mode #reset-section {
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.55), rgba(255, 250, 245, 0.42));
+  border-color: var(--halo-glass-border);
+}
+
+/* Überschriften im Farbverlauf der Startseite */
+html.auth-halo #auth-section h2,
+html.auth-halo #register-section h2,
+html.auth-halo #reset-section h2 {
+  background: linear-gradient(110deg, var(--accent-primary), var(--accent-secondary));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  letter-spacing: -0.01em;
+}
+
+/* Eingabefelder */
+html.auth-halo #auth-section input,
+html.auth-halo #register-section input,
+html.auth-halo #reset-section input {
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid var(--halo-glass-border);
+  color: var(--text-primary);
+  border-radius: 12px;
+}
+html.auth-halo.light-mode #auth-section input,
+html.auth-halo.light-mode #register-section input,
+html.auth-halo.light-mode #reset-section input {
+  background: rgba(255, 255, 255, 0.75);
+}
+html.auth-halo #auth-section input::placeholder,
+html.auth-halo #register-section input::placeholder,
+html.auth-halo #reset-section input::placeholder {
+  color: var(--text-muted);
+}
+html.auth-halo #auth-section input:focus,
+html.auth-halo #register-section input:focus,
+html.auth-halo #reset-section input:focus {
+  outline: none;
+  border-color: rgba(246, 162, 76, 0.55);
+  box-shadow: 0 0 0 3px rgba(246, 162, 76, 0.14);
+}
+
+/* Hauptbuttons im Verlauf, wie der "Anmelden"-Button der Startseite */
+html.auth-halo #login-btn,
+html.auth-halo #register-section button#register-btn,
+html.auth-halo #reset-section button {
+  background: var(--gradient-accent);
+  color: #201510;
+  border: none;
+  border-radius: 12px;
+  font-weight: 650;
+  transition: transform 0.2s ease, filter 0.2s ease;
+}
+html.auth-halo #login-btn:hover,
+html.auth-halo #register-section button#register-btn:hover,
+html.auth-halo #reset-section button:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.06);
+}
+
+/* Sekundärer Link "Registrieren" auf der Login-Karte */
+html.auth-halo #register-btn {
+  background: var(--halo-glass);
+  border: 1px solid var(--halo-glass-border);
+  color: var(--text-primary);
+  border-radius: 999px;
+  text-decoration: none;
+}
+html.auth-halo #register-btn:hover {
+  border-color: rgba(244, 237, 228, 0.3);
+  background: linear-gradient(120deg, rgba(246, 162, 76, 0.26), rgba(239, 93, 168, 0.22));
+}
+
+/* Fest verdrahtete Indigo-Reste der alten Seiten übermalen:
+   Zierlinie am oberen Kartenrand und Strich unter der Überschrift */
+html.auth-halo #register-section::before,
+html.auth-halo #reset-section::before {
+  background: linear-gradient(90deg, transparent, var(--accent-primary) 25%, var(--accent-secondary) 75%, transparent);
+}
+html.auth-halo #register-section h2,
+html.auth-halo #reset-section h2 {
+  background: linear-gradient(110deg, var(--accent-primary), var(--accent-secondary));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+html.auth-halo #register-section h2::after,
+html.auth-halo #reset-section h2::after {
+  background: var(--gradient-accent);
+}
+
+/* Meldungs- und Hinweisflächen */
+html.auth-halo #reset-message.info,
+html.auth-halo .password-requirements {
+  background: rgba(246, 162, 76, 0.10);
+  border-color: rgba(246, 162, 76, 0.24);
+  color: var(--text-secondary);
+}
+html.auth-halo #back-to-login:hover,
+html.auth-halo #forgot-password-link:hover {
+  color: var(--accent-primary);
+  background: rgba(246, 162, 76, 0.08);
+}
+
+/* Schritt-Punkte im Passwort-Reset */
+html.auth-halo .step-dot.active,
+html.auth-halo .step-dot.completed {
+  background: var(--gradient-accent);
+}
+
+/* Umschalter Hell/Dunkel */
+html.auth-halo .theme-toggle {
+  background: var(--halo-glass);
+  border: 1px solid var(--halo-glass-border);
+  color: var(--text-primary);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+html.auth-halo .theme-toggle:hover {
+  background: linear-gradient(120deg, rgba(246, 162, 76, 0.26), rgba(239, 93, 168, 0.22));
+}
+
+/* Zurück-zur-Startseite-Link (wird per Skript ergänzt) */
+.halo-home-link {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  z-index: 30;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 15px;
+  border-radius: 999px;
+  font-size: 0.84rem;
+  font-weight: 600;
+  text-decoration: none;
+  color: var(--text-primary, #f4ede4);
+  background: var(--halo-glass, rgba(255, 255, 255, 0.055));
+  border: 1px solid var(--halo-glass-border, rgba(244, 237, 228, 0.14));
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+.halo-home-link:hover {
+  transform: translateY(-2px);
+  border-color: rgba(244, 237, 228, 0.3);
+  background: linear-gradient(120deg, rgba(246, 162, 76, 0.28), rgba(239, 93, 168, 0.24));
+}
+
+@media (max-width: 560px) {
+  .halo-home-link { top: 14px; left: 14px; padding: 8px 12px; font-size: 0.78rem; }
+}

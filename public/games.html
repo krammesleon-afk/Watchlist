@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+<title>🎮 Games – Watchlist</title>
+<link rel="stylesheet" href="index.css">
+<style>
+  body { display: block; align-items: stretch; }
+  /* Hintergrundbild direkt auf dem Body – überlagert zuverlässig den index.css-Gradient.
+     --wallpaper wird per JS (auth-common.js) auf ein eigenes Bild gesetzt, falls auf der
+     Startseite eines gewählt wurde; sonst greift das Standardbild. Der Verlauf davor
+     dunkelt es ab, damit alles gut lesbar bleibt. */
+  body {
+    --wallpaper: url('/img/default-bg.png');
+    background:
+      /* Gleiche Kurve wie auf der Startseite: selbst ganz rechts bleibt der
+         Hintergrund sichtbar, statt komplett überdeckt zu werden. */
+      linear-gradient(160deg,
+        rgba(19,17,16, calc(0.95 * var(--bg-dim, 0.8))) 0%,
+        rgba(19,17,16, calc(0.75 * var(--bg-dim, 0.8))) 55%,
+        rgba(19,17,16, calc(0.98 * var(--bg-dim, 0.8))) 100%),
+      var(--wallpaper) center center / cover no-repeat fixed,
+      #14120f !important;
+  }
+
+  .games-app { width: 100%; max-width: 1900px; margin: 0 auto; padding: 16px; box-sizing: border-box; }
+
+  .games-header { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 22px; }
+  .games-header h1 { font-size: 1.8rem; margin: 0; }
+  .games-back {
+    padding: 9px 16px; background: linear-gradient(135deg, #374151, #4b5563); color: #fff;
+    border-radius: var(--radius-small); text-decoration: none; font-size: 0.9rem;
+  }
+  .games-back:hover { transform: translateY(-2px); }
+  .games-tabs { display: flex; gap: 8px; margin-left: auto; flex-wrap: wrap; }
+  .gtab {
+    padding: 9px 16px; border-radius: var(--radius-small); border: 1px solid var(--border-medium);
+    background: rgba(255,255,255,0.05); color: var(--text-secondary); cursor: pointer; font-size: 0.92rem;
+    transition: all 0.2s ease;
+  }
+  .gtab:hover { color: var(--text-color); }
+  .gtab.active {
+    background: var(--gradient-accent); color: #fff; border-color: transparent;
+  }
+
+  .add-game-bar { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+  .add-game-bar input {
+    flex: 1; min-width: 200px; padding: 10px 14px; border-radius: var(--radius-small);
+    border: 1px solid var(--border-medium); background: var(--bg-secondary); color: var(--text-color); font-size: 1rem;
+  }
+  .btn-primary { background: var(--gradient-accent); color: #fff; }
+
+  .games-substats { color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 14px; }
+  .recommend-intro { color: var(--text-secondary); margin: 0 0 14px; }
+
+  /* Game-Karten-Grid (Sammlung & Empfehlungen) */
+  .game-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 16px; }
+  .game-card {
+    background: rgba(255,255,255,0.05); border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-medium); overflow: hidden; display: flex; flex-direction: column;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  }
+  .game-card:hover { transform: translateY(-5px); box-shadow: var(--glow-accent); border-color: rgba(99,102,241,0.35); }
+  .gc-cover { position: relative; width: 100%; aspect-ratio: 16 / 9; background-size: cover; background-position: center; background-color: var(--bg-tertiary); }
+  .gc-cover.clickable { cursor: pointer; }
+  .gc-tier { position: absolute; top: 8px; left: 8px; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: 800; color: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.5); }
+  .gc-body { padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 4px; flex: 1; }
+  .gc-body strong { font-size: 0.95rem; line-height: 1.25; }
+  .gc-meta { font-size: 0.78rem; color: var(--text-secondary); }
+  .gc-actions { display: flex; gap: 6px; margin-top: auto; padding-top: 8px; }
+  .gc-actions button { flex: 1; padding: 7px 6px; font-size: 0.8rem; }
+  .empty-hint { color: var(--text-muted); text-align: center; padding: 40px; grid-column: 1 / -1; }
+
+  /* ===== Ranking-Ansicht ===== */
+  .search-filter-bar { display: flex; gap: 12px; margin-bottom: 18px; flex-wrap: wrap; align-items: center; }
+  .search-filter-bar input[type="text"], .search-filter-bar select {
+    padding: 9px 14px; border-radius: var(--radius-small); border: 1px solid var(--border-medium);
+    background: var(--bg-secondary); color: var(--text-color); font-size: 0.95rem;
+  }
+  .search-filter-bar input[type="text"] { flex: 1; min-width: 180px; }
+
+  .ranking-stats { display: flex; justify-content: center; gap: 16px; margin: 0 0 16px; flex-wrap: wrap; }
+  .ranking-stat { background: rgba(255,255,255,0.05); padding: 10px 18px; border-radius: var(--radius-medium); text-align: center; }
+  .ranking-stat-value { font-size: 1.6rem; font-weight: 700; color: var(--accent-primary); }
+  .ranking-stat-label { font-size: 0.78rem; color: var(--text-secondary); }
+  .ranking-controls { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; justify-content: center; }
+
+  .ranking-layout { display: flex; gap: 24px; align-items: flex-start; }
+  .tier-container { display: flex; flex-direction: column; gap: 12px; flex: 1; min-width: 0; }
+  .tier-row { display: flex; align-items: stretch; border-radius: var(--radius-medium); overflow: hidden; background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle); }
+  .tier-row:hover { box-shadow: var(--glow-accent); }
+  .tier-label { width: 80px; min-height: 100px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 2rem; font-weight: 800; color: #fff; text-shadow: 0 2px 10px rgba(0,0,0,0.5); flex-shrink: 0; cursor: pointer; }
+  .tier-label:hover { filter: brightness(1.1); }
+  .tier-label .tier-count { font-size: 0.7rem; opacity: 0.8; margin-top: 4px; }
+  .tier-s { background: linear-gradient(135deg, #ff0066, #ff3385); }
+  .tier-a { background: linear-gradient(135deg, #ff6600, #ff8533); }
+  .tier-b { background: linear-gradient(135deg, #ffcc00, #ffd633); color: #1a1a1a; }
+  .tier-c { background: linear-gradient(135deg, #33cc33, #5cd65c); }
+  .tier-d { background: linear-gradient(135deg, #3399ff, #5cadff); }
+  .tier-e { background: linear-gradient(135deg, #9966ff, #b38fff); }
+  .tier-f { background: linear-gradient(135deg, #666, #888); }
+  .tier-items { flex: 1; display: flex; flex-wrap: wrap; gap: 8px; padding: 10px; min-height: 100px; background: rgba(0,0,0,0.2); align-content: flex-start; }
+  .tier-item { width: 120px; height: 80px; border-radius: var(--radius-small); cursor: grab; position: relative; transition: transform 0.2s ease, box-shadow 0.2s ease; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+  .tier-item:hover { transform: scale(1.08); z-index: 10; box-shadow: var(--glow-accent); }
+  .tier-item img { width: 100%; height: 100%; object-fit: cover; border-radius: var(--radius-small); }
+  .tier-item .item-title { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(transparent, rgba(0,0,0,0.95)); color: #fff; font-size: 0.65rem; padding: 18px 4px 4px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-radius: 0 0 var(--radius-small) var(--radius-small); }
+  .tier-item .item-reason { position: absolute; bottom: 28px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.95); color: #fff; font-size: 0.65rem; padding: 4px 8px; border-radius: 6px; max-width: 140px; overflow: hidden; text-overflow: ellipsis; opacity: 0; transition: opacity 0.2s ease; pointer-events: none; z-index: 20; white-space: nowrap; }
+  .tier-item:hover .item-reason { opacity: 1; }
+  .tier-item.dragging { opacity: 0.5; transform: scale(1.15) rotate(5deg); z-index: 100; }
+  .tier-expand-btn { display: inline-flex; align-items: center; background: rgba(99,102,241,0.15); border: 1px solid rgba(99,102,241,0.3); color: var(--text-color); padding: 8px 16px; border-radius: var(--radius-small); cursor: pointer; font-size: 0.8rem; }
+  .tier-expand-btn.collapse { background: rgba(239,68,68,0.15); border-color: rgba(239,68,68,0.3); }
+
+  .unranked-section { width: 320px; flex-shrink: 0; padding: 14px; background: rgba(255,255,255,0.03); border-radius: var(--radius-large); border: 1px solid var(--border-subtle); position: sticky; top: 16px; max-height: calc(100vh - 32px); overflow-y: auto; }
+  .unranked-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .unranked-header h2 { font-size: 1.1rem; margin: 0; }
+  .unranked-header span { font-size: 0.8rem; color: var(--text-secondary); }
+  .unranked-items { display: flex; flex-wrap: wrap; gap: 8px; min-height: 120px; padding: 10px; background: rgba(0,0,0,0.2); border-radius: var(--radius-medium); }
+  .unranked-items .tier-item { width: 86px; height: 58px; }
+  .unranked-items .tier-item .item-title { font-size: 0.55rem; padding: 14px 3px 3px; }
+
+  /* ===== Modals ===== */
+  .ranking-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 5000; align-items: center; justify-content: center; backdrop-filter: blur(10px); }
+  .ranking-modal.active { display: flex; }
+  .ranking-modal-content { background: var(--card-bg, #1a1d24); border-radius: var(--radius-large); padding: 24px; max-width: 460px; width: 90%; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.5); border: 1px solid var(--border-medium); max-height: 90vh; overflow-y: auto; }
+  .ranking-modal-content img.modal-cover { width: 100%; max-width: 300px; height: 170px; object-fit: cover; border-radius: var(--radius-medium); margin-bottom: 15px; }
+  .reason-input-container textarea { width: 100%; min-height: 60px; padding: 10px; border-radius: var(--radius-small); border: 1px solid var(--border-medium); background: var(--bg-secondary); color: var(--text-color); font-size: 0.9rem; resize: vertical; font-family: inherit; margin: 12px 0; }
+  .tier-selector { display: flex; gap: 8px; justify-content: center; margin: 16px 0; flex-wrap: wrap; }
+  .tier-selector button { width: 50px; height: 50px; border-radius: 50%; font-size: 1.2rem; font-weight: bold; padding: 0; color: #fff; border: none; cursor: pointer; }
+  .tier-selector button.selected { transform: scale(1.15); box-shadow: var(--glow-accent); }
+  .modal-btn-row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  .search-results { display: flex; flex-direction: column; gap: 8px; max-height: 50vh; overflow-y: auto; text-align: left; }
+  .search-result { display: flex; gap: 12px; align-items: center; padding: 8px; background: rgba(255,255,255,0.05); border-radius: var(--radius-small); }
+  .search-result img { width: 80px; height: 50px; object-fit: cover; border-radius: 6px; flex-shrink: 0; background: #222; }
+  .search-result .sr-info { flex: 1; min-width: 0; }
+  .search-result .sr-info strong { display: block; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .search-result .sr-info span { font-size: 0.78rem; color: var(--text-secondary); }
+  .share-preview { background: var(--bg-secondary); border-radius: var(--radius-medium); padding: 16px; margin: 15px 0; text-align: left; max-height: 300px; overflow-y: auto; }
+  .share-preview-tier { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; padding: 8px; background: rgba(255,255,255,0.05); border-radius: var(--radius-small); }
+  .share-preview-tier .tier-badge { width: 35px; height: 35px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: bold; color: #fff; flex-shrink: 0; }
+  .share-preview-tier .tier-items-list { font-size: 0.85rem; color: var(--text-secondary); }
+
+  @media (max-width: 1000px) {
+    .ranking-layout { flex-direction: column; }
+    .unranked-section { width: auto; position: static; max-height: none; }
+  }
+  @media (max-width: 700px) {
+    .tier-label { width: 50px; min-height: 80px; font-size: 1.5rem; }
+    .tier-item { width: 100px; height: 68px; }
+  }
+
+  /* ===================================================================
+     Design-Refresh: warmer Glas-Look passend zur Startseite
+     =================================================================== */
+  :root {
+    --accent-primary: #f6a24c;
+    --accent-secondary: #ef5da8;
+    --gradient-accent: linear-gradient(135deg, #f6a24c, #ef5da8);
+    --glow-accent: 0 14px 34px -12px rgba(246,162,76,0.45), 0 6px 18px rgba(0,0,0,0.4);
+  }
+
+  /* Kopfzeile: Titel mit warmem Verlaufston */
+  .games-header h1 {
+    font-size: 2rem;
+    letter-spacing: -0.01em;
+    background: linear-gradient(120deg, #ffd9a8, #ffb0d4);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  /* Tabs als Glas-Pillen */
+  .gtab {
+    border-radius: 999px;
+    border-color: rgba(244,237,228,0.14);
+    background: rgba(255,255,255,0.055);
+    backdrop-filter: blur(12px) saturate(140%);
+    -webkit-backdrop-filter: blur(12px) saturate(140%);
+  }
+  .gtab:hover { border-color: rgba(244,237,228,0.28); }
+  .gtab.active { box-shadow: 0 8px 22px -8px rgba(246,162,76,0.55); }
+
+  /* Eingaben & Selects: dezentes Glas statt harter Fläche */
+  .add-game-bar input,
+  .search-filter-bar input[type="text"],
+  .search-filter-bar select {
+    background: rgba(255,255,255,0.06) !important;
+    border-color: rgba(244,237,228,0.14) !important;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+  .btn-primary { box-shadow: 0 8px 22px -8px rgba(246,162,76,0.55); }
+
+  /* Karten: frostiges Glas mit warmem Hover-Glow */
+  .game-card {
+    background: rgba(255,255,255,0.055);
+    border: 1px solid rgba(244,237,228,0.12);
+    border-radius: 16px;
+    backdrop-filter: blur(16px) saturate(140%);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+  }
+  .game-card:hover {
+    border-color: rgba(246,162,76,0.4);
+    box-shadow: var(--glow-accent);
+  }
+
+  /* Ranking-Kacheln & Statistik-Boxen ebenfalls glasig */
+  .ranking-stat,
+  .unranked-section,
+  .tier-row {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(244,237,228,0.1);
+    backdrop-filter: blur(14px) saturate(140%);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+  }
+  .tier-expand-btn {
+    background: rgba(246,162,76,0.14);
+    border-color: rgba(246,162,76,0.32);
+  }
+</style>
+
+<!-- Icon-Set (ersetzt die Emojis der Oberfläche) -->
+<link rel="stylesheet" href="/icons.css">
+<script src="/icons.js" defer></script>
+
+<!-- Regler für die Hintergrund-Verdunklung -->
+<script src="/bg-dim.js"></script>
+</head>
+<body>
+  <div class="games-app">
+    <header class="games-header">
+      <h1>🎮 Games</h1>
+      <div class="games-tabs">
+        <button class="gtab active" data-view="collection">🗂️ Sammlung</button>
+        <button class="gtab" data-view="ranking">🏆 Ranking</button>
+        <button class="gtab" data-view="recommend">✨ Empfehlungen</button>
+      </div>
+    </header>
+
+    <!-- ===== Sammlung ===== -->
+    <section class="games-view" id="view-collection">
+      <div class="add-game-bar">
+        <input type="text" id="collection-search" placeholder="In Sammlung suchen..." oninput="GW.filterCollection()">
+        <button class="btn-primary" onclick="GW.openAddGameModal()">➕ Spiel hinzufügen</button>
+      </div>
+      <div class="search-filter-bar">
+        <select id="collection-sort" onchange="GW.filterCollection()">
+          <option value="recent">Zuletzt hinzugefügt</option>
+          <option value="alpha">A–Z</option>
+          <option value="tier">Tier-Ranking</option>
+          <option value="rating">RAWG-Bewertung</option>
+        </select>
+        <select id="collection-genre" onchange="GW.filterCollection()">
+          <option value="">Alle Genres</option>
+        </select>
+      </div>
+      <div class="games-substats" id="collection-stats"></div>
+      <div class="game-grid" id="collection-grid"></div>
+    </section>
+
+    <!-- ===== Ranking ===== -->
+    <section class="games-view" id="view-ranking" style="display:none;">
+      <div class="search-filter-bar">
+        <input type="text" id="rk-search" placeholder="In Sammlung suchen..." oninput="GW.filterItems()">
+        <select id="rk-genre" onchange="GW.filterItems()">
+          <option value="">Alle Genres</option>
+        </select>
+        <select id="rk-tier" onchange="GW.filterItems()">
+          <option value="">Alle Tiers</option>
+          <option value="S">S-Tier</option>
+          <option value="A">A-Tier</option>
+          <option value="B">B-Tier</option>
+          <option value="C">C-Tier</option>
+          <option value="D">D-Tier</option>
+          <option value="E">E-Tier</option>
+          <option value="F">F-Tier</option>
+          <option value="unranked">Unranked</option>
+        </select>
+        <select id="rk-per-tier" onchange="GW.changeItemsPerTier()">
+          <option value="5">5 pro Tier</option>
+          <option value="10" selected>10 pro Tier</option>
+          <option value="20">20 pro Tier</option>
+          <option value="999">Alle anzeigen</option>
+        </select>
+      </div>
+
+      <div class="ranking-stats">
+        <div class="ranking-stat"><div class="ranking-stat-value" id="stat-games">0</div><div class="ranking-stat-label">Spiele</div></div>
+        <div class="ranking-stat"><div class="ranking-stat-value" id="stat-ranked">0</div><div class="ranking-stat-label">Gerankt</div></div>
+        <div class="ranking-stat"><div class="ranking-stat-value" id="stat-unranked">0</div><div class="ranking-stat-label">Unranked</div></div>
+        <div class="ranking-stat"><div class="ranking-stat-value" id="stat-avg">-</div><div class="ranking-stat-label">Ø Tier</div></div>
+      </div>
+
+      <div class="ranking-controls">
+        <button class="btn-primary" onclick="GW.openAddGameModal()">➕ Spiel hinzufügen</button>
+        <button onclick="GW.save()" style="background: var(--gradient-accent);">💾 Speichern</button>
+        <button onclick="GW.resetRanking()">🔄 Zurücksetzen</button>
+        <button onclick="GW.openShareModal()">📤 Teilen</button>
+      </div>
+
+      <div class="ranking-layout">
+        <div class="tier-container" id="tier-container"></div>
+        <div class="unranked-section">
+          <div class="unranked-header">
+            <h2>📦 Unranked</h2>
+            <span id="unranked-count">0 Spiele</span>
+          </div>
+          <div class="unranked-items" id="tier-unranked" data-tier="unranked"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Empfehlungen ===== -->
+    <section class="games-view" id="view-recommend" style="display:none;">
+      <p class="recommend-intro" id="recommend-intro">Empfehlungen werden anhand deiner Top-Spiele berechnet …</p>
+      <div style="margin-bottom:16px;">
+        <button onclick="GW.loadRecommendations(true)">🔄 Empfehlungen aktualisieren</button>
+      </div>
+      <div class="game-grid" id="recommend-grid"></div>
+    </section>
+  </div>
+
+  <!-- Item Modal -->
+  <div class="ranking-modal" id="item-modal">
+    <div class="ranking-modal-content">
+      <img id="modal-poster" class="modal-cover" src="" alt="Cover">
+      <h3 id="modal-title">Titel</h3>
+      <p style="color: var(--text-secondary); font-size: 0.9rem;" id="modal-type">Spiel</p>
+      <div class="tier-selector" id="tier-selector"></div>
+      <div class="reason-input-container">
+        <textarea id="modal-reason" placeholder="Warum dieses Tier? (optional)"></textarea>
+      </div>
+      <div class="modal-btn-row">
+        <button onclick="GW.closeModal()" style="background: linear-gradient(135deg, #374151, #4b5563);">Schließen</button>
+        <button onclick="GW.saveReasonOnly()" style="background: var(--gradient-accent);">💾 Speichern</button>
+        <button onclick="GW.moveToUnranked()" style="background: linear-gradient(135deg, #b45309, #d97706);">Aus Tier entfernen</button>
+        <button onclick="GW.deleteGame()" style="background: linear-gradient(135deg, #b91c1c, #dc2626);">🗑️ Aus Sammlung löschen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Game Modal -->
+  <div class="ranking-modal" id="add-modal">
+    <div class="ranking-modal-content">
+      <h3 style="margin-top:0;">➕ Spiel hinzufügen</h3>
+      <div class="add-game-bar">
+        <input type="text" id="add-search-input" placeholder="Spielname..." onkeydown="if(event.key==='Enter')GW.searchGames()">
+        <button class="btn-primary" onclick="GW.searchGames()">🔍 Suchen</button>
+      </div>
+      <div class="search-results" id="add-search-results">
+        <p style="text-align:center;color:var(--text-muted)">Gib einen Spielnamen ein und drücke Suchen.</p>
+      </div>
+      <button onclick="GW.closeAddModal()" style="width:100%; margin-top:15px; background: linear-gradient(135deg, #374151, #4b5563);">Schließen</button>
+    </div>
+  </div>
+
+  <!-- Share Modal -->
+  <div class="ranking-modal" id="share-modal">
+    <div class="ranking-modal-content">
+      <h3 style="margin-top:0;">📤 Game-Ranking teilen</h3>
+      <div class="share-preview" id="share-preview"></div>
+      <div style="margin:15px 0;">
+        <button onclick="GW.copyShareText()" style="width:100%;">📋 Als Text kopieren</button>
+      </div>
+      <button onclick="GW.closeShareModal()" style="width:100%; background: linear-gradient(135deg, #374151, #4b5563);">Schließen</button>
+    </div>
+  </div>
+
+  <div id="snackbar" class="snackbar" role="alert"></div>
+
+  <script src="auth-common.js"></script>
+  <script src="games.js"></script>
+</body>
+</html>

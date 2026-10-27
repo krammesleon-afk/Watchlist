@@ -1,0 +1,97 @@
+/* =============================================================
+   Darstellung der Icons aus icons.js
+   Icons erben ihre Farbe vom umgebenden Text (currentColor) und
+   richten sich an der Schriftgröße aus.
+   ============================================================= */
+
+.ic {
+  width: 1.15em;
+  height: 1.15em;
+  vertical-align: -0.18em;
+  flex-shrink: 0;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  overflow: visible;
+}
+
+/* ===== Startseite ===== */
+#top-bar .ic,
+.account-btn .ic { width: 1.05em; height: 1.05em; }
+
+.card .icon .ic,
+.grid .card .ic { width: 1em; height: 1em; }
+
+/* Große Kachel-Symbole auf der Startseite */
+.grid .card .icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.grid .card .icon .ic {
+  width: 26px;
+  height: 26px;
+  stroke-width: 1.6;
+}
+
+.shortcut-tile .ic { width: 22px; height: 22px; }
+.search-bar .ic { width: 1.1em; height: 1.1em; }
+.weather-icon .ic { width: 2.1em; height: 2.1em; stroke-width: 1.5; }
+.calendar-day-items .ic,
+.todo-list .ic { width: 1em; height: 1em; }
+
+/* ===== Watchlist-App ===== */
+nav .menu-item .ic {
+  width: 22px;
+  height: 22px;
+  stroke-width: 1.7;
+}
+nav .menu-item.active .ic { stroke-width: 2; }
+
+.section h1 .ic {
+  width: 0.9em;
+  height: 0.9em;
+  stroke-width: 1.6;
+  /* Überschriften sind Verlaufstext – Icons bekommen wieder eine feste Farbe */
+  stroke: var(--app-a, #7c7cf8);
+  vertical-align: -0.08em;
+}
+.section h2 .ic { width: 0.95em; height: 0.95em; stroke: currentColor; }
+
+/* Karten: Sterne kompakt, Aktionen klein */
+.card .info .stars .ic {
+  width: 0.95em;
+  height: 0.95em;
+  stroke-width: 1.6;
+  margin-right: -1px;
+  color: #ffc14d;
+}
+.card .info .favorite .ic {
+  width: 1.05em;
+  height: 1.05em;
+  color: #ffc14d;
+}
+.card .info button .ic { width: 1em; height: 1em; margin-right: 2px; }
+.poster-seen .ic { width: 0.85em; height: 0.85em; stroke-width: 2.4; }
+
+/* Aktionsmenü und Dialoge */
+.card-action-menu button .ic,
+.modal button .ic,
+.settings-group .ic { width: 1.05em; height: 1.05em; margin-right: 4px; }
+
+/* ===== Anmelde-Seiten ===== */
+.halo-home-link .ic,
+#global-home-btn .ic,
+#global-logout-btn .ic { width: 1.05em; height: 1.05em; }
+
+.theme-toggle .ic { width: 1.1em; height: 1.1em; }
+
+.password-requirements .ic { width: 0.95em; height: 0.95em; }
+.requirement.valid .ic { color: var(--accent-success, #6bcf7f); }
+
+/* Reine Zierde: Icons sollen keine Klicks abfangen */
+.ic { pointer-events: none; }
+button .ic,
+a .ic { pointer-events: none; }

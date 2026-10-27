@@ -1,0 +1,2515 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Satho-Net</title>
+<link rel="icon" href="data:,">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+  :root {
+    --bg-base: #131110;
+    --bg-base-2: #1c1815;
+    --ink: #f4ede4;
+    --ink-dim: #b9ada0;
+    --ink-faint: #7c7268;
+    --accent-a: #f6a24c;
+    --accent-b: #ef5da8;
+    --glass: rgba(255, 255, 255, 0.055);
+    --glass-border: rgba(244, 237, 228, 0.14);
+    --glass-border-hover: rgba(244, 237, 228, 0.28);
+    --radius: 20px;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body { height: 100%; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    color: var(--ink);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    line-height: 1.6;
+    position: relative;
+    isolation: isolate;
+  }
+
+  /* Basis-Hintergrund (immer sichtbar, sanftes Sonnenuntergangs-Glimmen) */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: -10%;
+    z-index: -4;
+    background:
+      radial-gradient(circle at 15% 0%, rgba(246, 162, 76, 0.18), transparent 45%),
+      radial-gradient(circle at 90% 20%, rgba(239, 93, 168, 0.15), transparent 42%),
+      linear-gradient(160deg, var(--bg-base) 0%, var(--bg-base-2) 100%);
+  }
+
+  /* Feines Korn für mehr Tiefe */
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -3;
+    opacity: 0.045;
+    pointer-events: none;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    body::before { animation: auroraFloat 28s ease-in-out infinite alternate; }
+  }
+  @keyframes auroraFloat {
+    0% { transform: translate3d(0, 0, 0) scale(1); }
+    50% { transform: translate3d(-2%, 2%, 0) scale(1.04); }
+    100% { transform: translate3d(2%, -1.5%, 0) scale(1); }
+  }
+
+  /* Hintergrundbild: Standardbild aus /img, per JS gegen ein eigenes austauschbar */
+  #bg-image-layer {
+    position: fixed;
+    inset: 0;
+    z-index: -2;
+    background-image: url('/img/default-bg.png');
+    background-size: cover;
+    background-position: center;
+    opacity: 1;
+    transition: opacity 0.4s ease, background-image 0.4s ease;
+    pointer-events: none;
+  }
+
+  /* Abdunklung über dem Bild, damit Karten/Text lesbar bleiben */
+  /* Abdunklung über dem Bild. Die Deckkraft steuert der Regler oben rechts:
+     0 = Bild unangetastet, 0.8 = Standard, 1 = maximal abgedunkelt. */
+  #bg-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    opacity: var(--bg-dim, 0.8);
+    background: linear-gradient(160deg, rgba(19, 17, 16, 0.95) 0%, rgba(19, 17, 16, 0.76) 60%, rgba(19, 17, 16, 0.98) 100%);
+    pointer-events: none;
+    transition: opacity 0.12s linear;
+  }
+
+  /* ===== Obere Leiste: Status links, Hintergrund-Steuerung rechts ===== */
+  #top-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 20;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 18px 20px;
+  }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.78rem;
+    letter-spacing: 0.04em;
+    color: var(--ink-dim);
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    padding: 8px 14px;
+    border-radius: 999px;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+  }
+
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--ink-faint);
+    transition: background 0.3s ease;
+    flex-shrink: 0;
+  }
+  .status-dot.online { background: #6bcf7f; animation: pulse 2s infinite; }
+  .status-dot.offline { background: #ef5d5d; }
+
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(107, 207, 127, 0.55); }
+    70% { box-shadow: 0 0 0 8px rgba(107, 207, 127, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(107, 207, 127, 0); }
+  }
+
+  #bg-control { display: flex; gap: 8px; align-items: center; }
+  #bg-control button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    color: var(--ink);
+    padding: 9px 14px;
+    border-radius: 999px;
+    font-size: 0.82rem;
+    cursor: pointer;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    transition: border-color 0.2s ease, background 0.2s ease;
+  }
+  #bg-control button:hover { border-color: var(--glass-border-hover); background: rgba(255,255,255,0.09); }
+  #bg-control #bg-remove-btn { display: none; }
+  body.has-custom-bg #bg-control #bg-remove-btn { display: inline-flex; }
+
+  .cal-toggle-btn { position: relative; }
+  .cal-toggle-btn:hover,
+  .cal-toggle-btn.open {
+    border-color: var(--glass-border-hover);
+    background: linear-gradient(120deg, rgba(246, 162, 76, 0.24), rgba(239, 93, 168, 0.2));
+  }
+  .cal-badge {
+    display: none;
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--accent-a);
+    border: 2px solid var(--bg-base);
+  }
+  .cal-badge.show { display: block; }
+
+  /* ===== Regler für die Abdunklung ===== */
+  .dim-control {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 13px 7px 11px;
+    border-radius: 999px;
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    cursor: pointer;
+    transition: border-color 0.2s ease, background 0.2s ease;
+  }
+  .dim-control:hover { border-color: var(--glass-border-hover); background: rgba(255,255,255,0.09); }
+  .dim-ico { display: inline-flex; color: var(--ink-dim); }
+  .dim-ico .ic { width: 15px; height: 15px; }
+
+  #bg-dim-range {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 84px;
+    height: 4px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--accent-a), var(--accent-b));
+    outline: none;
+    cursor: pointer;
+  }
+  #bg-dim-range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    background: var(--ink);
+    border: none;
+    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.5);
+    cursor: grab;
+  }
+  #bg-dim-range::-moz-range-thumb {
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    background: var(--ink);
+    border: none;
+    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.5);
+    cursor: grab;
+  }
+  #bg-dim-range:focus-visible { outline: 2px solid var(--accent-a); outline-offset: 4px; }
+
+  @media (max-width: 700px) {
+    #bg-dim-range { width: 56px; }
+  }
+
+  main {
+    width: 100%;
+    max-width: 960px;
+    padding: 96px 24px 90px;
+  }
+
+  /* ===== Schnellsuche ===== */
+  .search-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 999px;
+    padding: 6px 8px 6px 20px;
+    margin-bottom: 24px;
+    backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    transition: border-color 0.2s ease;
+  }
+  .search-bar:focus-within {
+    border-color: var(--glass-border-hover);
+    box-shadow: 0 0 0 3px rgba(246, 162, 76, 0.15);
+  }
+  .search-bar select {
+    background: transparent;
+    border: none;
+    border-right: 1px solid var(--glass-border);
+    color: var(--ink-dim);
+    font-size: 0.85rem;
+    padding: 8px 12px 8px 0;
+    cursor: pointer;
+    outline: none;
+  }
+  .search-bar select option { background: var(--bg-base-2); color: var(--ink); }
+  .search-bar input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--ink);
+    font-size: 0.98rem;
+    padding: 8px 0;
+    min-width: 0;
+  }
+  .search-bar input::placeholder { color: var(--ink-faint); }
+  .search-bar button {
+    background: linear-gradient(120deg, var(--accent-a), var(--accent-b));
+    border: none;
+    border-radius: 999px;
+    width: 38px;
+    height: 38px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 1rem;
+    color: #201510;
+  }
+
+  .grid {
+    display: grid;
+    /* 205px: die vier Bereiche passen so nebeneinander statt 3 + 1 */
+    grid-template-columns: repeat(auto-fit, minmax(205px, 1fr));
+    gap: 16px;
+  }
+
+  .card {
+    position: relative;
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius);
+    padding: 28px 24px;
+    text-decoration: none;
+    color: var(--ink);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    overflow: hidden;
+    backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease, background 0.25s ease, box-shadow 0.25s ease;
+  }
+  a.card:hover {
+    transform: translateY(-6px);
+    border-color: var(--glass-border-hover);
+    background: rgba(255, 255, 255, 0.09);
+    box-shadow: 0 18px 40px -14px rgba(246, 162, 76, 0.4), 0 10px 26px rgba(0, 0, 0, 0.35);
+  }
+  .card .icon {
+    font-size: 1.7rem;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 14px;
+    background: linear-gradient(135deg, rgba(246, 162, 76, 0.22), rgba(239, 93, 168, 0.18));
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  a.card:hover .icon { transform: scale(1.1) rotate(-4deg); }
+
+  /* Feiner Glas-Kantenglanz oben links */
+  .card::before, .widget::before, .shortcut-tile::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(150deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0) 45%);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+  .card h3 { margin: 4px 0 0; font-size: 1.08rem; font-weight: 600; }
+  .card p { margin: 0; color: var(--ink-dim); font-size: 0.9rem; }
+  .card .arrow {
+    position: absolute;
+    top: 24px;
+    right: 24px;
+    color: var(--ink-faint);
+    transition: transform 0.2s ease, color 0.2s ease;
+  }
+  a.card:hover .arrow { transform: translate(3px, -3px); color: var(--ink); }
+
+  .card.soon {
+    border-style: dashed;
+    color: var(--ink-faint);
+    cursor: default;
+    background: transparent;
+  }
+  .card.soon:hover { transform: none; border-color: var(--glass-border); background: transparent; }
+  .card.soon .icon { background: rgba(255, 255, 255, 0.06); }
+
+  .section-label {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    color: var(--ink-faint);
+    font-size: 0.76rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin: 38px 0 14px;
+  }
+  .section-label::before {
+    content: "";
+    width: 14px;
+    height: 2px;
+    border-radius: 2px;
+    background: linear-gradient(90deg, var(--accent-a), var(--accent-b));
+    flex-shrink: 0;
+  }
+  main > .section-label:first-child { margin-top: 0; }
+
+  /* ===== Widgets: Uhrzeit & Wetter ===== */
+  .widget-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+  }
+  .widget {
+    position: relative;
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius);
+    padding: 24px;
+    backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+  }
+
+  #clock-time {
+    font-family: Georgia, 'Iowan Old Style', serif;
+    font-size: 2.6rem;
+    font-weight: 500;
+    line-height: 1;
+    text-shadow: 0 2px 24px rgba(246, 162, 76, 0.28);
+  }
+  #clock-date {
+    margin-top: 8px;
+    color: var(--ink-dim);
+    font-size: 0.92rem;
+    text-transform: capitalize;
+  }
+
+  .weather-main { display: flex; align-items: center; gap: 16px; }
+  .weather-icon { font-size: 2.6rem; line-height: 1; }
+  .weather-temp { font-family: Georgia, 'Iowan Old Style', serif; font-size: 2.2rem; font-weight: 500; text-shadow: 0 2px 24px rgba(246, 162, 76, 0.28); }
+  .weather-desc { color: var(--ink-dim); font-size: 0.88rem; }
+  .weather-place {
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: var(--ink-faint);
+    font-size: 0.82rem;
+  }
+  .weather-place button {
+    background: none;
+    border: none;
+    color: var(--ink-faint);
+    cursor: pointer;
+    font-size: 0.8rem;
+    text-decoration: underline;
+    padding: 0;
+  }
+  .weather-place button:hover { color: var(--ink); }
+
+  .weather-setup { display: flex; flex-direction: column; gap: 10px; }
+  .weather-setup p { margin: 0; color: var(--ink-dim); font-size: 0.88rem; }
+  .weather-setup-row { display: flex; gap: 8px; }
+  .weather-setup-row input {
+    flex: 1;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid var(--glass-border);
+    border-radius: 10px;
+    padding: 9px 12px;
+    color: var(--ink);
+    font-size: 0.9rem;
+  }
+  .weather-setup-row input::placeholder { color: var(--ink-faint); }
+  .weather-setup-row button, .weather-setup button {
+    background: linear-gradient(120deg, var(--accent-a), var(--accent-b));
+    border: none;
+    border-radius: 10px;
+    padding: 9px 16px;
+    color: #201510;
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .weather-setup-alt {
+    background: none !important;
+    color: var(--ink-dim) !important;
+    text-decoration: underline;
+    font-weight: 400 !important;
+    padding: 0 !important;
+  }
+  .weather-error { color: #ef8d8d; font-size: 0.82rem; margin: 0; }
+
+  /* ===== To-Do (im Kalender-Panel) ===== */
+  .todo-count {
+    font-size: 0.72rem;
+    color: var(--ink-faint);
+    background: rgba(255, 255, 255, 0.06);
+    padding: 2px 9px;
+    border-radius: 999px;
+  }
+  .todo-count:empty { display: none; }
+  /* ===== To-Do im Kalender-Panel ===== */
+  .calendar-todo {
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(244, 237, 228, 0.10);
+  }
+  .calendar-todo-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 2px;
+  }
+  .calendar-todo-title {
+    flex: 1;
+    font-size: 0.78rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+  .todo-form { display: flex; gap: 6px; margin: 10px 0; }
+  .todo-form input {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--glass-border);
+    border-radius: 10px;
+    padding: 8px 10px;
+    color: var(--ink);
+    font-size: 0.88rem;
+  }
+  .todo-form input[type="text"] { flex: 1; min-width: 0; }
+  .todo-form input[type="date"] { width: 128px; font-size: 0.76rem; color-scheme: dark; }
+  .todo-form input::placeholder { color: var(--ink-faint); }
+  .todo-date-badge { color: var(--ink-faint); font-size: 0.72rem; margin-left: 4px; }
+  .todo-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    max-height: 190px;
+    overflow-y: auto;
+  }
+  .todo-item { display: flex; align-items: center; gap: 8px; font-size: 0.88rem; }
+  .todo-item input[type="checkbox"] { accent-color: var(--accent-a); width: 15px; height: 15px; flex-shrink: 0; }
+  .todo-item span { flex: 1; overflow-wrap: anywhere; }
+  .todo-item.done span { text-decoration: line-through; color: var(--ink-faint); }
+  .todo-remove {
+    background: none;
+    border: none;
+    color: var(--ink-faint);
+    cursor: pointer;
+    font-size: 0.72rem;
+    padding: 2px 4px;
+    display: none;
+    flex-shrink: 0;
+  }
+  .todo-item:hover .todo-remove { display: inline; }
+  .todo-remove:hover { color: var(--ink); }
+  .todo-empty { color: var(--ink-faint); font-size: 0.85rem; }
+
+  /* ===== Shortcuts (oft besuchte Seiten) ===== */
+  .shortcuts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+    gap: 12px;
+  }
+  .shortcut-tile {
+    position: relative;
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 16px 10px 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    color: var(--ink);
+    backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  .shortcut-tile:hover {
+    transform: translateY(-3px);
+    border-color: var(--glass-border-hover);
+    box-shadow: 0 12px 28px -12px rgba(246, 162, 76, 0.35);
+  }
+  .shortcut-tile.dragging { opacity: 0.35; }
+  .shortcut-tile.drag-over { border-color: var(--accent-a); box-shadow: 0 0 0 1px var(--accent-a) inset; }
+  .shortcut-tile img { width: 28px; height: 28px; border-radius: 6px; }
+  .shortcut-tile span {
+    font-size: 0.76rem;
+    color: var(--ink-dim);
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+  .shortcut-remove {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.5);
+    color: var(--ink-dim);
+    border: none;
+    font-size: 0.7rem;
+    line-height: 1;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+  .shortcut-tile:hover .shortcut-remove { display: flex; }
+  .shortcut-remove:hover { color: var(--ink); background: rgba(0,0,0,0.75); }
+
+  .shortcut-add {
+    cursor: pointer;
+    border-style: dashed;
+    color: var(--ink-faint);
+    justify-content: center;
+  }
+  .shortcut-add .plus { font-size: 1.4rem; line-height: 1; }
+
+  .shortcut-form {
+    grid-column: span 2;
+    background: var(--glass);
+    border: 1px solid var(--glass-border-hover);
+    border-radius: 16px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .shortcut-form input {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid var(--glass-border);
+    border-radius: 10px;
+    padding: 8px 10px;
+    color: var(--ink);
+    font-size: 0.85rem;
+  }
+  .shortcut-form-actions { display: flex; gap: 8px; justify-content: flex-end; }
+  .shortcut-form-actions button {
+    border: none;
+    border-radius: 8px;
+    padding: 7px 14px;
+    font-size: 0.8rem;
+    cursor: pointer;
+  }
+  .shortcut-form-actions .save-btn { background: linear-gradient(120deg, var(--accent-a), var(--accent-b)); color: #201510; font-weight: 600; }
+  .shortcut-form-actions .cancel-btn { background: rgba(255,255,255,0.08); color: var(--ink-dim); }
+
+  /* ===== Shortcuts: Section-Header mit Bookmarklet ===== */
+  .section-label-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .bookmarklet-btn {
+    text-transform: none;
+    letter-spacing: normal;
+    font-size: 0.78rem;
+    color: var(--ink);
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    padding: 6px 13px;
+    border-radius: 999px;
+    text-decoration: none;
+    cursor: grab;
+    white-space: nowrap;
+  }
+  .bookmarklet-btn:hover { border-color: var(--glass-border-hover); background: rgba(255,255,255,0.09); }
+  .bookmarklet-btn:active { cursor: grabbing; }
+  .shortcuts-hint {
+    margin: -4px 0 14px;
+    color: var(--ink-faint);
+    font-size: 0.8rem;
+  }
+
+  /* ===== Kalender: schwebendes Panel oben rechts ===== */
+  .calendar-panel {
+    position: fixed;
+    top: 66px;
+    right: 18px;
+    z-index: 30;
+    width: 380px;
+    max-width: calc(100vw - 36px);
+    max-height: calc(100vh - 90px);
+    overflow-y: auto;
+    padding: 20px 22px;
+    box-shadow: var(--shadow-large, 0 20px 50px rgba(0, 0, 0, 0.45));
+    transform: translateY(-10px) scale(0.98);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.18s ease, transform 0.18s ease;
+  }
+  .calendar-panel.open {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
+  }
+  .calendar-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .calendar-header span#cal-month-label {
+    flex: 1;
+    font-weight: 600;
+    text-transform: capitalize;
+    font-size: 1rem;
+  }
+  .calendar-header button {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    color: var(--ink);
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .calendar-header button:hover { border-color: var(--glass-border-hover); }
+  .cal-today-btn { width: auto !important; padding: 0 12px; font-size: 0.76rem !important; }
+
+  .calendar-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+    margin-bottom: 6px;
+  }
+  .calendar-weekdays span {
+    text-align: center;
+    font-size: 0.7rem;
+    color: var(--ink-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+  }
+  .cal-day {
+    aspect-ratio: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--ink-dim);
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+  .cal-day:hover { border-color: var(--glass-border); }
+  .cal-day.empty { visibility: hidden; cursor: default; }
+  .cal-day.today { color: var(--ink); font-weight: 700; border-color: var(--accent-a); }
+  .cal-day.selected { background: rgba(246, 162, 76, 0.18); border-color: var(--accent-a); color: var(--ink); }
+  .cal-day-dots { display: flex; gap: 2px; height: 5px; }
+  .cal-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent-a); }
+  .cal-dot.gcal { background: #6ab8ff; }
+
+  .calendar-day-panel {
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid var(--glass-border);
+  }
+  .calendar-day-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    text-transform: capitalize;
+  }
+  .calendar-day-panel-header button {
+    background: none;
+    border: none;
+    color: var(--ink-faint);
+    cursor: pointer;
+    font-size: 0.85rem;
+  }
+  .calendar-day-panel-header button:hover { color: var(--ink); }
+  .calendar-day-items {
+    list-style: none;
+    margin: 0 0 10px;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .cal-gcal-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    color: var(--ink-dim);
+  }
+  .cal-gcal-item::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #6ab8ff;
+    flex-shrink: 0;
+  }
+  .calendar-day-empty { color: var(--ink-faint); font-size: 0.85rem; }
+
+  .calendar-day-add-form input {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--glass-border);
+    border-radius: 10px;
+    padding: 8px 12px;
+    color: var(--ink);
+    font-size: 0.85rem;
+  }
+  .calendar-day-add-form input::placeholder { color: var(--ink-faint); }
+
+  .calendar-gcal {
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid var(--glass-border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .gcal-btn {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    color: var(--ink);
+    padding: 8px 14px;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    cursor: pointer;
+  }
+  .gcal-btn:hover { border-color: var(--glass-border-hover); }
+  .gcal-status { font-size: 0.78rem; color: var(--ink-faint); }
+  .gcal-setup { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; width: 100%; }
+  .gcal-setup input {
+    flex: 1;
+    min-width: 180px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--glass-border);
+    border-radius: 10px;
+    padding: 8px 12px;
+    color: var(--ink);
+    font-size: 0.85rem;
+  }
+  .gcal-setup-hint { width: 100%; color: var(--ink-faint); font-size: 0.75rem; margin: -2px 0 0; }
+
+  /* ===== Toast ===== */
+  #toast {
+    position: fixed;
+    bottom: 26px;
+    left: 50%;
+    transform: translateX(-50%) translateY(16px);
+    background: rgba(28, 24, 21, 0.92);
+    border: 1px solid var(--glass-border-hover);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    padding: 12px 22px;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    color: var(--ink);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    z-index: 50;
+    white-space: nowrap;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  footer {
+    color: var(--ink-faint);
+    font-size: 0.85rem;
+    padding: 24px;
+    text-align: center;
+  }
+  footer a { color: var(--ink-dim); }
+
+  /* ===== Feinschliff: Klick-Feedback & Scrollbars ===== */
+  button { transition: transform 0.15s ease; }
+  button:active { transform: scale(0.94); }
+
+  .todo-list::-webkit-scrollbar, .calendar-panel::-webkit-scrollbar { width: 6px; }
+  .todo-list::-webkit-scrollbar-thumb, .calendar-panel::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 999px;
+  }
+  .todo-list::-webkit-scrollbar-track, .calendar-panel::-webkit-scrollbar-track { background: transparent; }
+
+  /* ===== Sanftes Einblenden beim Laden ===== */
+  @media (prefers-reduced-motion: no-preference) {
+    main > * { animation: fadeSlideUp 0.55s cubic-bezier(0.16, 1, 0.3, 1) both; }
+    main > *:nth-child(1) { animation-delay: 0.02s; }
+    main > *:nth-child(2) { animation-delay: 0.08s; }
+    main > *:nth-child(3) { animation-delay: 0.14s; }
+    main > *:nth-child(4) { animation-delay: 0.2s; }
+    main > *:nth-child(5) { animation-delay: 0.26s; }
+    main > *:nth-child(6) { animation-delay: 0.32s; }
+    main > *:nth-child(7) { animation-delay: 0.38s; }
+    main > *:nth-child(8) { animation-delay: 0.44s; }
+    main > *:nth-child(9) { animation-delay: 0.5s; }
+    #top-bar { animation: fadeSlideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both; }
+  }
+  @keyframes fadeSlideUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ===== Account: Pille oben links + Login-Dialog ===== */
+  #top-bar-left { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+  .account-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    color: var(--ink);
+    padding: 8px 14px;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-family: inherit;
+    cursor: pointer;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+  }
+  .account-btn:hover { border-color: var(--glass-border-hover); background: rgba(255,255,255,0.09); transform: translateY(-1px); }
+  .account-btn.signed-in {
+    background: linear-gradient(120deg, rgba(246, 162, 76, 0.22), rgba(239, 93, 168, 0.18));
+  }
+  .account-btn .account-avatar {
+    width: 20px; height: 20px; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 0.68rem; font-weight: 700; color: #201510;
+    background: linear-gradient(120deg, var(--accent-a), var(--accent-b));
+    flex-shrink: 0;
+  }
+  .account-sync { font-size: 0.72rem; color: var(--ink-faint); transition: color 0.2s ease; }
+  .account-sync.saving { color: var(--accent-a); }
+
+  /* Overlay */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(10, 9, 8, 0.6);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+  }
+  .modal-backdrop.open { display: flex; animation: modalFade 0.2s ease; }
+  @keyframes modalFade { from { opacity: 0; } to { opacity: 1; } }
+
+  .auth-card {
+    width: 100%;
+    max-width: 380px;
+    background: linear-gradient(160deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.035));
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius);
+    padding: 28px 26px 24px;
+    backdrop-filter: blur(22px) saturate(150%);
+    -webkit-backdrop-filter: blur(22px) saturate(150%);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+    animation: modalRise 0.25s cubic-bezier(0.2, 0.8, 0.3, 1);
+  }
+  @keyframes modalRise { from { opacity: 0; transform: translateY(14px) scale(0.98); } to { opacity: 1; transform: none; } }
+
+  .auth-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 4px; }
+  .auth-card h2 {
+    margin: 0;
+    font-size: 1.3rem;
+    font-weight: 650;
+    letter-spacing: -0.01em;
+    background: linear-gradient(110deg, var(--accent-a), var(--accent-b));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .auth-card p.auth-sub { margin: 2px 0 20px; color: var(--ink-dim); font-size: 0.85rem; line-height: 1.5; }
+
+  .auth-close {
+    background: none; border: none; color: var(--ink-faint);
+    font-size: 1.1rem; cursor: pointer; padding: 2px 6px; line-height: 1;
+    border-radius: 8px; transition: color 0.2s ease, background 0.2s ease;
+  }
+  .auth-close:hover { color: var(--ink); background: rgba(255,255,255,0.08); }
+
+  .auth-field { margin-bottom: 12px; }
+  .auth-field input {
+    width: 100%;
+    padding: 12px 15px;
+    border-radius: 12px;
+    border: 1px solid var(--glass-border);
+    background: rgba(0, 0, 0, 0.28);
+    color: var(--ink);
+    font-size: 0.92rem;
+    font-family: inherit;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  .auth-field input::placeholder { color: var(--ink-faint); }
+  .auth-field input:focus {
+    outline: none;
+    border-color: rgba(246, 162, 76, 0.55);
+    box-shadow: 0 0 0 3px rgba(246, 162, 76, 0.14);
+  }
+
+  .auth-submit {
+    width: 100%;
+    margin-top: 6px;
+    padding: 12px 18px;
+    border: none;
+    border-radius: 12px;
+    background: linear-gradient(120deg, var(--accent-a), var(--accent-b));
+    color: #201510;
+    font-size: 0.95rem;
+    font-weight: 650;
+    font-family: inherit;
+    cursor: pointer;
+    transition: transform 0.2s ease, filter 0.2s ease;
+  }
+  .auth-submit:hover:not(:disabled) { transform: translateY(-1px); filter: brightness(1.06); }
+  .auth-submit:disabled { opacity: 0.6; cursor: progress; }
+
+  .auth-links {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: 16px;
+    font-size: 0.82rem;
+  }
+  .auth-links a { color: var(--ink-dim); text-decoration: none; transition: color 0.2s ease; }
+  .auth-links a:hover { color: var(--accent-a); }
+
+  .auth-msg {
+    margin: 12px 0 0;
+    padding: 10px 13px;
+    border-radius: 10px;
+    font-size: 0.83rem;
+    display: none;
+  }
+  .auth-msg.show { display: block; }
+  .auth-msg.error { background: rgba(239, 93, 93, 0.14); border: 1px solid rgba(239, 93, 93, 0.32); color: #ffb4b4; }
+  .auth-msg.ok { background: rgba(107, 207, 127, 0.14); border: 1px solid rgba(107, 207, 127, 0.32); color: #a7e6b5; }
+
+  .auth-note {
+    margin: 18px 0 0;
+    padding-top: 14px;
+    border-top: 1px solid rgba(244, 237, 228, 0.09);
+    color: var(--ink-faint);
+    font-size: 0.78rem;
+    line-height: 1.5;
+  }
+
+  @media (max-width: 560px) {
+    #top-bar { padding: 12px 14px; gap: 8px; }
+    .account-btn { padding: 7px 11px; font-size: 0.75rem; }
+    .account-btn .account-label-long { display: none; }
+  }
+
+</style>
+
+<!-- Icon-Set (ersetzt die Emojis der Oberfläche) -->
+<link rel="stylesheet" href="/icons.css">
+<script src="/icons.js" defer></script>
+</head>
+<body>
+
+<div id="bg-image-layer"></div>
+<div id="bg-scrim"></div>
+
+<div id="top-bar">
+  <div id="top-bar-left">
+    <div class="pill"><span class="status-dot" id="status-dot"></span><span id="status-text">Prüfe Serverstatus…</span></div>
+    <button type="button" class="account-btn" id="account-btn" title="Anmelden"><span>👤</span><span class="account-label-long">Anmelden</span></button>
+  </div>
+  <div id="bg-control">
+    <button id="cal-toggle-btn" class="cal-toggle-btn" title="Kalender ein-/ausblenden" aria-expanded="false">
+      📅 <span>Kalender</span><span id="cal-badge" class="cal-badge"></span>
+    </button>
+    <label class="dim-control" title="Hintergrund heller oder dunkler stellen">
+      <span class="dim-ico" data-ic="moon"></span>
+      <input type="range" id="bg-dim-range" min="0" max="1" step="0.05" value="0.8" aria-label="Verdunklung des Hintergrunds">
+    </label>
+    <button id="bg-choose-btn" title="Eigenes Hintergrundbild wählen">🖼️ <span>Hintergrund</span></button>
+    <button id="bg-remove-btn" title="Hintergrundbild entfernen">✕</button>
+    <input type="file" id="bg-file-input" accept="image/*" style="display:none">
+  </div>
+</div>
+
+<div class="widget calendar-panel" id="calendar-panel">
+  <div class="calendar-header">
+    <button type="button" id="cal-prev" title="Vorheriger Monat">‹</button>
+    <span id="cal-month-label"></span>
+    <button type="button" id="cal-today" class="cal-today-btn">Heute</button>
+    <button type="button" id="cal-next" title="Nächster Monat">›</button>
+  </div>
+  <div class="calendar-weekdays">
+    <span>Mo</span><span>Di</span><span>Mi</span><span>Do</span><span>Fr</span><span>Sa</span><span>So</span>
+  </div>
+  <div class="calendar-grid" id="calendar-grid"></div>
+
+  <div class="calendar-day-panel" id="calendar-day-panel" style="display:none;">
+    <div class="calendar-day-panel-header">
+      <span id="calendar-day-label"></span>
+      <button type="button" id="calendar-day-close">✕</button>
+    </div>
+    <ul class="calendar-day-items" id="calendar-day-items"></ul>
+    <form id="calendar-day-add-form" class="calendar-day-add-form">
+      <input type="text" id="calendar-day-add-input" placeholder="Aufgabe für diesen Tag…" autocomplete="off">
+    </form>
+  </div>
+
+  <!-- To-Do: sitzt jetzt im Kalender statt in einem eigenen Widget.
+       Einträge mit Datum tauchen zusätzlich im jeweiligen Tag oben auf. -->
+  <div class="calendar-todo">
+    <div class="calendar-todo-header">
+      <span class="calendar-todo-title">To-Do</span>
+      <span class="todo-count" id="todo-count"></span>
+    </div>
+    <form id="todo-form" class="todo-form">
+      <input type="text" id="todo-input" placeholder="Neuer Punkt…" autocomplete="off">
+      <input type="date" id="todo-date-input" title="Fälligkeitsdatum (optional)">
+    </form>
+    <ul class="todo-list" id="todo-list"></ul>
+  </div>
+
+  <div class="calendar-gcal" id="calendar-gcal"></div>
+</div>
+
+<main>
+  <form class="search-bar" id="search-bar">
+    <select id="search-engine" title="Suchmaschine wählen">
+      <option value="google">Google</option>
+      <option value="youtube">YouTube</option>
+    </select>
+    <input type="text" id="search-input" placeholder="Suchen…" autocomplete="off">
+    <button type="submit" title="Suchen">➜</button>
+  </form>
+
+  <div class="widget-grid">
+    <div class="widget">
+      <div id="clock-time">--:--</div>
+      <div id="clock-date"></div>
+    </div>
+
+    <div class="widget" id="weather-widget">
+      <div class="weather-setup" id="weather-setup">
+        <p>Für die Wettervorhersage einen Ort eingeben:</p>
+        <div class="weather-setup-row">
+          <input type="text" id="weather-city-input" placeholder="z. B. Berlin">
+          <button id="weather-save-btn">Speichern</button>
+        </div>
+        <p class="weather-error" id="weather-error" style="display:none;"></p>
+      </div>
+      <div class="weather-result" id="weather-result" style="display:none;">
+        <div class="weather-main">
+          <span class="weather-icon" id="weather-icon">⛅</span>
+          <div>
+            <div class="weather-temp" id="weather-temp">--°</div>
+            <div class="weather-desc" id="weather-desc">Lädt…</div>
+          </div>
+        </div>
+        <div class="weather-place">
+          <span id="weather-place-name"></span>
+          <button id="weather-change-btn">Ort ändern</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-label section-label-row">
+    <span>Deine Shortcuts</span>
+    <a id="bookmarklet-link" class="bookmarklet-btn" href="#" draggable="true" title="In die Lesezeichen-Leiste ziehen">🔖 Seite hinzufügen</a>
+  </div>
+  <p class="shortcuts-hint">Den Button "🔖 Seite hinzufügen" per Drag &amp; Drop in deine Lesezeichen-Leiste ziehen. Danach auf jeder Webseite draufklicken &ndash; sie landet automatisch hier.</p>
+  <div class="shortcuts-grid" id="shortcuts-grid"></div>
+
+  <div class="section-label">Verfügbar</div>
+  <div class="grid">
+    <a class="card" href="/index.html">
+      <span class="arrow">↗</span>
+      <span class="icon">📺</span>
+      <h3>Watchlist</h3>
+      <p>Filme, Serien &amp; Anime tracken, ranken und mit Freunden teilen.</p>
+    </a>
+    <a class="card" href="/games.html">
+      <span class="arrow">↗</span>
+      <span class="icon">🎮</span>
+      <h3>Games</h3>
+      <p>Deine Spielesammlung und Empfehlungen über RAWG.</p>
+    </a>
+    <a class="card" href="/friends.html">
+      <span class="arrow">↗</span>
+      <span class="icon">👥</span>
+      <h3>Freunde</h3>
+      <p>Freundschaften verwalten und gemeinsame Listen führen.</p>
+    </a>
+    <a class="card" href="/tools.html">
+      <span class="arrow">↗</span>
+      <span class="icon"><span data-ic="wrench"></span></span>
+      <h3>Werkzeugkasten</h3>
+      <p>Gesammelte Werkzeuge für Rechner, Netz und Linux.</p>
+    </a>
+  </div>
+
+  <div class="section-label">Bald verfügbar</div>
+  <div class="grid">
+    <div class="card soon">
+      <span class="icon">🚀</span>
+      <h3>Nächstes Projekt</h3>
+      <p>Hier landet dein nächstes Tool, sobald es fertig ist.</p>
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  watchlist.satho-net.de &middot; <a href="/api/health" target="_blank" rel="noopener">Server-Status</a>
+  &middot; <a href="https://netpurple.net" target="_blank" rel="noopener noreferrer">netpurple.net</a>
+</footer>
+
+<!-- Login direkt auf der Startseite: setzt dasselbe Token wie die App-Seiten,
+     danach werden Shortcuts, To-Dos, Wetter & Hintergrund vom Account geladen. -->
+<div class="modal-backdrop" id="auth-modal" role="dialog" aria-modal="true" aria-labelledby="auth-modal-title">
+  <div class="auth-card">
+    <div class="auth-card-head">
+      <h2 id="auth-modal-title">Anmelden</h2>
+      <button type="button" class="auth-close" id="auth-modal-close" aria-label="Schließen">✕</button>
+    </div>
+    <p class="auth-sub">Melde dich an, damit deine Shortcuts, To-Dos, dein Wetterort und dein Hintergrund auf jedem Gerät verfügbar sind.</p>
+
+    <form id="auth-form" autocomplete="on">
+      <div class="auth-field">
+        <input id="auth-username" type="text" placeholder="Benutzername" autocomplete="username" aria-label="Benutzername" required>
+      </div>
+      <div class="auth-field">
+        <input id="auth-password" type="password" placeholder="Passwort" autocomplete="current-password" aria-label="Passwort" required>
+      </div>
+      <button type="submit" class="auth-submit" id="auth-submit">Anmelden</button>
+    </form>
+
+    <p class="auth-msg" id="auth-modal-msg" aria-live="polite"></p>
+
+    <div class="auth-links">
+      <a href="/register.html">Konto erstellen</a>
+      <a href="/password-reset.html">Passwort vergessen?</a>
+    </div>
+
+    <p class="auth-note">Ohne Anmeldung bleibt alles wie bisher nur in diesem Browser gespeichert.</p>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+  /* =========================================================================
+     Account & Synchronisierung
+     Alle Widget-Daten der Startseite liegen weiterhin im localStorage. Ist man
+     angemeldet, werden sie zusätzlich als ein JSON-Blob unter /api/prefs am
+     Account gespeichert und beim Laden von dort geholt. Ohne Login verhält
+     sich die Seite exakt wie vorher.
+     ========================================================================= */
+  var Account = (function () {
+    var TOKEN_KEY = 'auth_token';       // gleicher Key wie in auth-common.js
+    var USER_KEY = 'sathonet_user';
+
+    // Diese Keys hängen am Account und werden synchronisiert
+    var SYNC_KEYS = [
+      'sathonet_shortcuts',
+      'sathonet_todos',
+      'sathonet_weather_location',
+      'sathonet_search_engine',
+      'sathonet_bg_image',
+      'sathonet_bg_dim',
+      'sathonet_gcal_client_id'
+    ];
+
+    // Original-Methoden merken, damit das Zurückschreiben vom Server
+    // keinen erneuten Upload auslöst.
+    var rawSet = localStorage.setItem.bind(localStorage);
+    var rawRemove = localStorage.removeItem.bind(localStorage);
+
+    var pushTimer = null;
+    var lastPushed = null;
+    var syncEl = null;
+
+    function getToken() { try { return localStorage.getItem(TOKEN_KEY); } catch (e) { return null; } }
+
+    // Inhalt des Tokens lesen (nur zur Anzeige – geprüft wird serverseitig)
+    function tokenPayload(t) {
+      if (!t) return null;
+      try {
+        var part = t.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+        return JSON.parse(atob(part));
+      } catch (e) { return null; }
+    }
+
+    function getUser() {
+      if (!getToken()) return null;   // ohne Token nie einen Namen anzeigen
+      try {
+        var raw = localStorage.getItem(USER_KEY);
+        if (raw) return JSON.parse(raw);
+      } catch (e) {}
+      // Wurde der Login über eine App-Seite gemacht, gibt es kein gespeichertes
+      // Profil – dann den Namen aus dem Token lesen.
+      var payload = tokenPayload(getToken());
+      return payload && payload.username ? { id: payload.id, username: payload.username } : null;
+    }
+    function isSynced(key) { return SYNC_KEYS.indexOf(key) !== -1; }
+
+    // Abgelaufene Anmeldung (Token gilt 12 h) sofort verwerfen, damit oben
+    // nicht der Name eines alten Logins steht, sondern wieder "Anmelden".
+    function dropExpiredSession() {
+      var payload = tokenPayload(getToken());
+      if (payload && payload.exp && Date.now() >= payload.exp * 1000) {
+        clearSession();
+        return true;
+      }
+      return false;
+    }
+
+    function clearSession() {
+      try {
+        rawRemove(TOKEN_KEY);
+        rawRemove(USER_KEY);
+        sessionStorage.removeItem(TOKEN_KEY);
+      } catch (e) {}
+      document.cookie = 'auth_token=;path=/;expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    }
+
+    // Aktueller lokaler Stand als flaches Objekt (Werte bleiben Strings)
+    function collectLocal() {
+      var out = {};
+      SYNC_KEYS.forEach(function (k) {
+        var v = null;
+        try { v = localStorage.getItem(k); } catch (e) {}
+        if (v !== null) out[k] = v;
+      });
+      return out;
+    }
+
+    // Server-Stand in den localStorage übernehmen; true, wenn sich etwas geändert hat
+    function applyPrefs(prefs) {
+      var changed = false;
+      Object.keys(prefs || {}).forEach(function (k) {
+        if (!isSynced(k) || typeof prefs[k] !== 'string') return;
+        var current = null;
+        try { current = localStorage.getItem(k); } catch (e) {}
+        if (current !== prefs[k]) {
+          try { rawSet(k, prefs[k]); changed = true; } catch (e) {}
+        }
+      });
+      return changed;
+    }
+
+    function setSyncState(state) {
+      if (!syncEl) return;
+      if (state === 'saving') {
+        syncEl.textContent = '↻';
+        syncEl.classList.add('saving');
+        syncEl.title = 'Speichert…';
+      } else if (state === 'saved') {
+        syncEl.textContent = '✓';
+        syncEl.classList.remove('saving');
+        syncEl.title = 'Am Account gespeichert';
+      } else {
+        syncEl.textContent = '';
+        syncEl.classList.remove('saving');
+        syncEl.title = '';
+      }
+    }
+
+    function pushNow(beimVerlassen) {
+      var token = getToken();
+      if (!token) return Promise.resolve(false);
+
+      var body = JSON.stringify({ prefs: collectLocal() });
+      if (body === lastPushed) return Promise.resolve(true);
+
+      var optionen = {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: body
+      };
+      // Beim Verlassen der Seite hält "keepalive" die Anfrage am Leben.
+      // Das Limit dafür liegt bei 64 KB – größere Stände (eigenes
+      // Hintergrundbild) gehen ohne, dann greift der reguläre Upload.
+      if (beimVerlassen && body.length < 60000) optionen.keepalive = true;
+
+      setSyncState('saving');
+      return fetch('/api/prefs', optionen).then(function (res) {
+        if (res.status === 401 || res.status === 403) { clearSession(); render(); return false; }
+        if (!res.ok) { setSyncState(''); return false; }
+        lastPushed = body;
+        setSyncState('saved');
+        return true;
+      }).catch(function () { setSyncState(''); return false; });
+    }
+
+    function schedulePush() {
+      if (!getToken()) return;
+      clearTimeout(pushTimer);
+      pushTimer = setTimeout(function () { pushTimer = null; pushNow(); }, 1200);
+    }
+
+    // Wer schnell weiterklickt, soll seine Änderung nicht verlieren:
+    // beim Verlassen der Seite einen noch wartenden Upload sofort senden.
+    function flushPush() {
+      if (!pushTimer) return;
+      clearTimeout(pushTimer);
+      pushTimer = null;
+      pushNow(true);
+    }
+    if (window.addEventListener) {
+      window.addEventListener('pagehide', flushPush);
+      document.addEventListener('visibilitychange', function () {
+        if (document.visibilityState === 'hidden') flushPush();
+      });
+    }
+
+    // Jede Widget-Änderung landet über localStorage.setItem hier und wird
+    // gebündelt hochgeladen – die Widgets selbst müssen nichts davon wissen.
+    localStorage.setItem = function (key, value) {
+      rawSet(key, value);
+      if (isSynced(key)) schedulePush();
+    };
+    localStorage.removeItem = function (key) {
+      rawRemove(key);
+      // Ohne Verzögerung: sonst holt der Account einen gerade gelöschten
+      // Eintrag beim nächsten Seitenaufruf wieder zurück.
+      if (isSynced(key)) { clearTimeout(pushTimer); pushNow(); }
+    };
+
+    // Beim Start: Stand vom Account holen. Hat der Account noch nichts
+    // gespeichert, wird der lokale Stand hochgeladen (nichts geht verloren).
+    function loadPrefs() {
+      dropExpiredSession();
+      var token = getToken();
+      if (!token) return Promise.resolve(false);
+
+      return fetch('/api/prefs', { headers: { 'Authorization': 'Bearer ' + token }, cache: 'no-store' })
+        .then(function (res) {
+          if (res.status === 401 || res.status === 403) { clearSession(); return false; }
+          if (!res.ok) return false;
+          return res.json().then(function (data) {
+            var prefs = data && data.prefs;
+            if (!prefs || !Object.keys(prefs).length) { pushNow(); return false; }
+            applyPrefs(prefs);
+            // Keys, die es nur lokal gibt, dem Account nachreichen
+            var local = collectLocal();
+            var missing = Object.keys(local).some(function (k) { return !(k in prefs); });
+            if (missing) schedulePush();
+            else lastPushed = JSON.stringify({ prefs: collectLocal() });
+            return true;
+          });
+        })
+        .catch(function () { return false; });
+    }
+
+    function login(username, password) {
+      return fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: username, password: password })
+      }).then(function (res) {
+        return res.json().catch(function () { return {}; }).then(function (data) {
+          if (!res.ok) throw new Error(data.msg || 'Anmeldung fehlgeschlagen');
+          rawSet(TOKEN_KEY, data.token);
+          rawSet(USER_KEY, JSON.stringify(data.user || { username: username }));
+          return data;
+        });
+      });
+    }
+
+    function logout() {
+      clearTimeout(pushTimer);
+      clearSession();
+      window.location.reload();
+    }
+
+    // ===== Oberfläche: Pille oben links + Dialog =====
+    var btn, modal, form, msgEl, submitBtn, userInput, passInput;
+
+    function showMsg(text, kind) {
+      if (!msgEl) return;
+      msgEl.textContent = text;
+      msgEl.className = 'auth-msg show ' + (kind || 'error');
+    }
+    function hideMsg() { if (msgEl) msgEl.className = 'auth-msg'; }
+
+    function openModal() {
+      if (!modal) return;
+      hideMsg();
+      modal.classList.add('open');
+      setTimeout(function () { if (userInput) userInput.focus(); }, 60);
+    }
+    function closeModal() { if (modal) modal.classList.remove('open'); }
+
+    function render() {
+      if (!btn) return;
+      var user = getUser();
+      var token = getToken();
+      if (token && user) {
+        var initial = (user.username || '?').charAt(0).toUpperCase();
+        var name = document.createElement('span');
+        name.textContent = user.username || 'Konto';
+
+        btn.innerHTML = '';
+        var avatar = document.createElement('span');
+        avatar.className = 'account-avatar';
+        avatar.textContent = initial;
+        var sync = document.createElement('span');
+        sync.className = 'account-sync';
+        sync.id = 'account-sync';
+
+        btn.appendChild(avatar);
+        btn.appendChild(name);
+        btn.appendChild(sync);
+        btn.classList.add('signed-in');
+        btn.title = 'Abmelden';
+      } else {
+        btn.innerHTML = '<span>👤</span><span class="account-label-long">Anmelden</span>';
+        btn.classList.remove('signed-in');
+        btn.title = 'Anmelden – synchronisiert deine Startseite';
+      }
+      syncEl = document.getElementById('account-sync');
+    }
+
+    function initUi() {
+      btn = document.getElementById('account-btn');
+      modal = document.getElementById('auth-modal');
+      form = document.getElementById('auth-form');
+      msgEl = document.getElementById('auth-modal-msg');
+      submitBtn = document.getElementById('auth-submit');
+      userInput = document.getElementById('auth-username');
+      passInput = document.getElementById('auth-password');
+
+      dropExpiredSession();
+      render();
+
+      if (btn) {
+        btn.addEventListener('click', function () {
+          if (getToken() && getUser()) {
+            if (confirm('Abmelden? Deine Daten bleiben auf diesem Gerät gespeichert.')) logout();
+          } else {
+            openModal();
+          }
+        });
+      }
+
+      var closeBtn = document.getElementById('auth-modal-close');
+      if (closeBtn) closeBtn.addEventListener('click', closeModal);
+      if (modal) {
+        modal.addEventListener('click', function (e) { if (e.target === modal) closeModal(); });
+      }
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && modal && modal.classList.contains('open')) closeModal();
+      });
+
+      if (form) {
+        form.addEventListener('submit', function (e) {
+          e.preventDefault();
+          var username = (userInput.value || '').trim();
+          var password = passInput.value || '';
+          if (!username || !password) { showMsg('Bitte Benutzername und Passwort eingeben.'); return; }
+
+          submitBtn.disabled = true;
+          submitBtn.textContent = 'Anmelden…';
+          hideMsg();
+
+          login(username, password)
+            .then(function () {
+              showMsg('Angemeldet – deine Startseite wird geladen…', 'ok');
+              // Neu laden, damit die Widgets direkt mit den Account-Daten starten
+              setTimeout(function () { window.location.reload(); }, 500);
+            })
+            .catch(function (err) {
+              showMsg(err.message || 'Anmeldung fehlgeschlagen');
+              submitBtn.disabled = false;
+              submitBtn.textContent = 'Anmelden';
+              passInput.value = '';
+              passInput.focus();
+            });
+        });
+      }
+    }
+
+    return {
+      initUi: initUi,
+      loadPrefs: loadPrefs,
+      render: render,
+      getToken: getToken
+    };
+  })();
+
+  // Alle bisherigen Widgets – laufen erst los, wenn die Account-Daten da sind.
+  function bootDashboard() {
+  (function checkHealth() {
+    const dot = document.getElementById('status-dot');
+    const text = document.getElementById('status-text');
+    fetch('/api/health', { cache: 'no-store' })
+      .then((r) => { if (!r.ok) throw new Error('bad status'); return r.json(); })
+      .then(() => {
+        dot.classList.add('online');
+        text.textContent = 'Server online';
+      })
+      .catch(() => {
+        dot.classList.add('offline');
+        text.textContent = 'Server nicht erreichbar';
+      });
+  })();
+
+  // ===== Stärke der Abdunklung =====
+  (function backgroundDim() {
+    const KEY = 'sathonet_bg_dim';
+    const STANDARD = '0.8';
+    const range = document.getElementById('bg-dim-range');
+    const root = document.documentElement;
+
+    function apply(value) {
+      root.style.setProperty('--bg-dim', value);
+    }
+
+    let gespeichert = STANDARD;
+    try { gespeichert = localStorage.getItem(KEY) || STANDARD; } catch (e) {}
+    apply(gespeichert);
+    if (range) range.value = gespeichert;
+
+    if (!range) return;
+
+    const steuerung = range.closest('.dim-control');
+    function titelSetzen() {
+      if (steuerung) {
+        steuerung.title = 'Verdunklung: ' + Math.round(parseFloat(range.value) * 100) +
+                          ' % · Doppelklick setzt auf Standard zurück';
+      }
+    }
+    titelSetzen();
+
+    range.addEventListener('input', () => {
+      apply(range.value);
+      titelSetzen();
+    });
+    // Erst beim Loslassen speichern – sonst schreibt jedes Pixel in den Speicher
+    range.addEventListener('change', () => {
+      try { localStorage.setItem(KEY, range.value); } catch (e) {}
+    });
+    // Notausgang, falls man sich verstellt hat
+    if (steuerung) {
+      steuerung.addEventListener('dblclick', () => {
+        range.value = STANDARD;
+        apply(STANDARD);
+        titelSetzen();
+        try { localStorage.setItem(KEY, STANDARD); } catch (e) {}
+      });
+    }
+  })();
+
+  (function customBackground() {
+    const STORAGE_KEY = 'sathonet_bg_image';
+    const body = document.body;
+    const layer = document.getElementById('bg-image-layer');
+    const chooseBtn = document.getElementById('bg-choose-btn');
+    const removeBtn = document.getElementById('bg-remove-btn');
+    const fileInput = document.getElementById('bg-file-input');
+
+    function applyBackground(dataUrl) {
+      layer.style.backgroundImage = 'url(' + dataUrl + ')';
+      body.classList.add('has-custom-bg');
+    }
+
+    function clearBackground() {
+      layer.style.backgroundImage = ''; // fällt zurück auf das Standardbild aus dem CSS
+      body.classList.remove('has-custom-bg');
+      try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+    }
+
+    // Ab etwa 4 MB nimmt der Browser ein Bild als CSS-Wert nicht mehr an.
+    // Games, Freunde und Werkzeugkasten setzen es über die Variable
+    // --wallpaper und zeigen dann wieder das Standardbild. Deshalb wird
+    // jedes gewählte Bild auf eine vernünftige Größe gerechnet.
+    const MAX_ZEICHEN = 1500000;   // Zielgröße der Data-URL
+    const MAX_BREITE = 2560;       // reicht für jeden Bildschirm
+
+    function verkleinern(dataUrl, fertig) {
+      const bild = new Image();
+      bild.onload = () => {
+        try {
+          const faktor = Math.min(1, MAX_BREITE / bild.naturalWidth);
+          const breite = Math.max(1, Math.round(bild.naturalWidth * faktor));
+          const hoehe = Math.max(1, Math.round(bild.naturalHeight * faktor));
+          const leinwand = document.createElement('canvas');
+          leinwand.width = breite;
+          leinwand.height = hoehe;
+          leinwand.getContext('2d').drawImage(bild, 0, 0, breite, hoehe);
+
+          let klein = leinwand.toDataURL('image/jpeg', 0.82);
+          if (klein.length > MAX_ZEICHEN) klein = leinwand.toDataURL('image/jpeg', 0.65);
+          fertig(klein.length < dataUrl.length ? klein : dataUrl);
+        } catch (e) {
+          fertig(dataUrl);
+        }
+      };
+      bild.onerror = () => fertig(dataUrl);
+      bild.src = dataUrl;
+    }
+
+    function speichern(dataUrl) {
+      applyBackground(dataUrl);
+      try {
+        localStorage.setItem(STORAGE_KEY, dataUrl);
+      } catch (e) {
+        console.warn('Hintergrundbild konnte nicht dauerhaft gespeichert werden (evtl. zu groß).', e);
+      }
+    }
+
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        applyBackground(saved);
+        // Früher gespeicherte, zu große Bilder einmalig nachrechnen,
+        // damit sie auch auf den anderen Seiten ankommen.
+        if (saved.length > MAX_ZEICHEN) {
+          verkleinern(saved, (klein) => {
+            if (klein !== saved) speichern(klein);
+          });
+        }
+      }
+    } catch (e) {}
+
+    chooseBtn.addEventListener('click', () => fileInput.click());
+    removeBtn.addEventListener('click', clearBackground);
+
+    fileInput.addEventListener('change', () => {
+      const file = fileInput.files && fileInput.files[0];
+      if (!file) return;
+      if (!file.type.startsWith('image/')) {
+        alert('Bitte eine Bilddatei wählen.');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        verkleinern(reader.result, speichern);
+      };
+      reader.readAsDataURL(file);
+      fileInput.value = '';
+    });
+  })();
+
+  // ===== Kalender ein-/ausblenden (Panel oben rechts) =====
+  (function calendarToggle() {
+    const btn = document.getElementById('cal-toggle-btn');
+    const panel = document.getElementById('calendar-panel');
+
+    function setOpen(open) {
+      panel.classList.toggle('open', open);
+      btn.classList.toggle('open', open);
+      btn.setAttribute('aria-expanded', String(open));
+    }
+
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      setOpen(!panel.classList.contains('open'));
+    });
+    panel.addEventListener('click', (e) => e.stopPropagation());
+    document.addEventListener('click', () => setOpen(false));
+  })();
+
+  // ===== Gemeinsamer Speicher für To-Dos (von To-Do-Widget & Kalender genutzt) =====
+  const SathoTodos = {
+    KEY: 'sathonet_todos',
+    load() {
+      try { return JSON.parse(localStorage.getItem(this.KEY) || '[]'); } catch (e) { return []; }
+    },
+    save(items) {
+      try { localStorage.setItem(this.KEY, JSON.stringify(items)); } catch (e) {}
+      window.dispatchEvent(new CustomEvent('sathonet:todos-changed'));
+    },
+  };
+
+  // ===== Uhr & Datum =====
+  (function clock() {
+    const timeEl = document.getElementById('clock-time');
+    const dateEl = document.getElementById('clock-date');
+    function tick() {
+      const now = new Date();
+      timeEl.textContent = now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+      dateEl.textContent = now.toLocaleDateString('de-DE', { weekday: 'long', day: '2-digit', month: 'long' });
+    }
+    tick();
+    setInterval(tick, 15000);
+  })();
+
+  // ===== Wetter (Open-Meteo, kein API-Key nötig) =====
+  (function weather() {
+    const STORAGE_KEY = 'sathonet_weather_location';
+    const setupBox = document.getElementById('weather-setup');
+    const resultBox = document.getElementById('weather-result');
+    const cityInput = document.getElementById('weather-city-input');
+    const saveBtn = document.getElementById('weather-save-btn');
+    const errorEl = document.getElementById('weather-error');
+    const changeBtn = document.getElementById('weather-change-btn');
+    const iconEl = document.getElementById('weather-icon');
+    const tempEl = document.getElementById('weather-temp');
+    const descEl = document.getElementById('weather-desc');
+    const placeEl = document.getElementById('weather-place-name');
+
+    const WEATHER_CODES = {
+      0: ['☀️', 'Klarer Himmel'], 1: ['🌤️', 'Meist klar'], 2: ['⛅', 'Teilweise bewölkt'], 3: ['☁️', 'Bedeckt'],
+      45: ['🌫️', 'Nebel'], 48: ['🌫️', 'Reifnebel'],
+      51: ['🌦️', 'Leichter Nieselregen'], 53: ['🌦️', 'Nieselregen'], 55: ['🌦️', 'Starker Nieselregen'],
+      61: ['🌧️', 'Leichter Regen'], 63: ['🌧️', 'Regen'], 65: ['🌧️', 'Starker Regen'],
+      71: ['🌨️', 'Leichter Schneefall'], 73: ['🌨️', 'Schneefall'], 75: ['🌨️', 'Starker Schneefall'],
+      80: ['🌦️', 'Regenschauer'], 81: ['🌦️', 'Regenschauer'], 82: ['⛈️', 'Heftige Schauer'],
+      95: ['⛈️', 'Gewitter'], 96: ['⛈️', 'Gewitter mit Hagel'], 99: ['⛈️', 'Gewitter mit Hagel'],
+    };
+
+    function showSetup() {
+      setupBox.style.display = 'flex';
+      resultBox.style.display = 'none';
+    }
+    function showResult() {
+      setupBox.style.display = 'none';
+      resultBox.style.display = 'block';
+    }
+    function showError(msg) {
+      errorEl.textContent = msg;
+      errorEl.style.display = 'block';
+    }
+
+    function loadWeather(loc) {
+      fetch(`https://api.open-meteo.com/v1/forecast?latitude=${loc.lat}&longitude=${loc.lon}&current=temperature_2m,weather_code&timezone=auto`)
+        .then((r) => r.json())
+        .then((data) => {
+          const current = data.current || {};
+          const info = WEATHER_CODES[current.weather_code] || ['🌡️', 'Unbekannt'];
+          iconEl.textContent = info[0];
+          descEl.textContent = info[1];
+          tempEl.textContent = Math.round(current.temperature_2m) + '°C';
+          placeEl.textContent = loc.label;
+          showResult();
+        })
+        .catch(() => {
+          showSetup();
+          showError('Wetter konnte nicht geladen werden.');
+        });
+    }
+
+    function searchCity(city) {
+      errorEl.style.display = 'none';
+      fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=de&format=json`)
+        .then((r) => r.json())
+        .then((data) => {
+          const hit = data.results && data.results[0];
+          if (!hit) {
+            showError('Ort nicht gefunden, bitte anders schreiben.');
+            return;
+          }
+          const label = [hit.name, hit.admin1, hit.country].filter(Boolean).slice(0, 2).join(', ');
+          const loc = { lat: hit.latitude, lon: hit.longitude, label };
+          try { localStorage.setItem(STORAGE_KEY, JSON.stringify(loc)); } catch (e) {}
+          loadWeather(loc);
+        })
+        .catch(() => showError('Suche fehlgeschlagen. Später erneut versuchen.'));
+    }
+
+    saveBtn.addEventListener('click', () => {
+      const city = cityInput.value.trim();
+      if (city) searchCity(city);
+    });
+    cityInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') saveBtn.click();
+    });
+    changeBtn.addEventListener('click', showSetup);
+
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+      if (saved && saved.lat && saved.lon) {
+        loadWeather(saved);
+      } else {
+        showSetup();
+      }
+    } catch (e) {
+      showSetup();
+    }
+  })();
+
+  // ===== Schnellsuche =====
+  (function quickSearch() {
+    const STORAGE_KEY = 'sathonet_search_engine';
+    const form = document.getElementById('search-bar');
+    const engineSelect = document.getElementById('search-engine');
+    const input = document.getElementById('search-input');
+
+    const ENGINES = {
+      google: (q) => 'https://www.google.com/search?q=' + encodeURIComponent(q),
+      youtube: (q) => 'https://www.youtube.com/results?search_query=' + encodeURIComponent(q),
+    };
+
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved && ENGINES[saved]) engineSelect.value = saved;
+    } catch (e) {}
+
+    engineSelect.addEventListener('change', () => {
+      try { localStorage.setItem(STORAGE_KEY, engineSelect.value); } catch (e) {}
+    });
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const q = input.value.trim();
+      if (!q) return;
+      const build = ENGINES[engineSelect.value] || ENGINES.google;
+      window.open(build(q), '_blank');
+      input.value = '';
+    });
+  })();
+
+  // ===== To-Do (synct sich mit dem Kalender) =====
+  (function todo() {
+    const form = document.getElementById('todo-form');
+    const input = document.getElementById('todo-input');
+    const dateInput = document.getElementById('todo-date-input');
+    const list = document.getElementById('todo-list');
+    const countEl = document.getElementById('todo-count');
+
+    function render() {
+      const items = SathoTodos.load();
+      const openCount = items.filter((i) => !i.done).length;
+      countEl.textContent = openCount ? String(openCount) : '';
+      list.innerHTML = '';
+
+      if (!items.length) {
+        const li = document.createElement('li');
+        li.className = 'todo-empty';
+        li.textContent = 'Noch nichts hier.';
+        list.appendChild(li);
+        return;
+      }
+
+      items.forEach((item, idx) => {
+        const li = document.createElement('li');
+        li.className = 'todo-item' + (item.done ? ' done' : '');
+
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.checked = !!item.done;
+        cb.addEventListener('change', () => {
+          const current = SathoTodos.load();
+          current[idx].done = cb.checked;
+          SathoTodos.save(current);
+        });
+
+        const span = document.createElement('span');
+        span.textContent = item.text;
+        if (item.date) {
+          const badge = document.createElement('small');
+          badge.className = 'todo-date-badge';
+          const d = new Date(item.date + 'T00:00:00');
+          badge.textContent = d.toLocaleDateString('de-DE', { day: '2-digit', month: 'short' });
+          span.appendChild(document.createTextNode(' '));
+          span.appendChild(badge);
+        }
+
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'todo-remove';
+        removeBtn.textContent = '✕';
+        removeBtn.addEventListener('click', () => {
+          const current = SathoTodos.load();
+          current.splice(idx, 1);
+          SathoTodos.save(current);
+        });
+
+        li.appendChild(cb);
+        li.appendChild(span);
+        li.appendChild(removeBtn);
+        list.appendChild(li);
+      });
+    }
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const text = input.value.trim();
+      if (!text) return;
+      const entry = { text, done: false };
+      if (dateInput.value) entry.date = dateInput.value;
+      const items = SathoTodos.load();
+      items.push(entry);
+      SathoTodos.save(items);
+      input.value = '';
+      dateInput.value = '';
+    });
+
+    window.addEventListener('sathonet:todos-changed', render);
+    render();
+  })();
+
+  // ===== Kalender (lokal, synct sich mit den To-Dos; optional Google Kalender) =====
+  (function calendar() {
+    const grid = document.getElementById('calendar-grid');
+    const monthLabel = document.getElementById('cal-month-label');
+    const prevBtn = document.getElementById('cal-prev');
+    const nextBtn = document.getElementById('cal-next');
+    const todayBtn = document.getElementById('cal-today');
+
+    const dayPanel = document.getElementById('calendar-day-panel');
+    const dayLabel = document.getElementById('calendar-day-label');
+    const dayItems = document.getElementById('calendar-day-items');
+    const dayCloseBtn = document.getElementById('calendar-day-close');
+    const dayAddForm = document.getElementById('calendar-day-add-form');
+    const dayAddInput = document.getElementById('calendar-day-add-input');
+
+    const gcalControls = document.getElementById('calendar-gcal');
+    const toast = document.getElementById('toast');
+
+    const GCAL_CLIENT_ID_KEY = 'sathonet_gcal_client_id';
+    let gcalAccessToken = null;
+    let gcalTokenClient = null;
+    let gcalEventsByDate = {}; // 'YYYY-MM-DD' -> [{title, time}]
+
+    let viewDate = new Date();
+    viewDate.setDate(1);
+    let selectedDate = toISODate(new Date());
+
+    function pad(n) { return String(n).padStart(2, '0'); }
+    function toISODate(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+
+    function showToast(msg) {
+      if (!toast) { alert(msg); return; }
+      toast.textContent = msg;
+      toast.classList.add('show');
+      clearTimeout(showToast._timer);
+      showToast._timer = setTimeout(() => toast.classList.remove('show'), 2800);
+    }
+
+    function renderGrid() {
+      monthLabel.textContent = viewDate.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
+      grid.innerHTML = '';
+
+      const year = viewDate.getFullYear();
+      const month = viewDate.getMonth();
+      const firstDay = new Date(year, month, 1);
+      const startOffset = (firstDay.getDay() + 6) % 7; // Woche beginnt Montag
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const todayIso = toISODate(new Date());
+      const todos = SathoTodos.load();
+
+      for (let i = 0; i < startOffset; i++) {
+        const empty = document.createElement('div');
+        empty.className = 'cal-day empty';
+        grid.appendChild(empty);
+      }
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dateStr = year + '-' + pad(month + 1) + '-' + pad(day);
+        const cell = document.createElement('div');
+        cell.className = 'cal-day';
+        if (dateStr === todayIso) cell.classList.add('today');
+        if (dateStr === selectedDate) cell.classList.add('selected');
+
+        const num = document.createElement('span');
+        num.textContent = String(day);
+        cell.appendChild(num);
+
+        const hasTodo = todos.some((t) => t.date === dateStr);
+        const hasGcal = !!(gcalEventsByDate[dateStr] && gcalEventsByDate[dateStr].length);
+        if (hasTodo || hasGcal) {
+          const dots = document.createElement('div');
+          dots.className = 'cal-day-dots';
+          if (hasTodo) { const d = document.createElement('span'); d.className = 'cal-dot'; dots.appendChild(d); }
+          if (hasGcal) { const d = document.createElement('span'); d.className = 'cal-dot gcal'; dots.appendChild(d); }
+          cell.appendChild(dots);
+        }
+
+        cell.addEventListener('click', () => {
+          selectedDate = dateStr;
+          renderGrid();
+          renderDayPanel();
+        });
+
+        grid.appendChild(cell);
+      }
+
+      updateBadge();
+    }
+
+    function updateBadge() {
+      const badge = document.getElementById('cal-badge');
+      if (!badge) return;
+      const todayIso = toISODate(new Date());
+      const todos = SathoTodos.load();
+      const hasToday = todos.some((t) => t.date === todayIso) || !!(gcalEventsByDate[todayIso] && gcalEventsByDate[todayIso].length);
+      badge.classList.toggle('show', hasToday);
+    }
+
+    function renderDayPanel() {
+      if (!selectedDate) { dayPanel.style.display = 'none'; return; }
+      dayPanel.style.display = 'block';
+
+      const d = new Date(selectedDate + 'T00:00:00');
+      dayLabel.textContent = d.toLocaleDateString('de-DE', { weekday: 'long', day: '2-digit', month: 'long' });
+
+      dayItems.innerHTML = '';
+      const todos = SathoTodos.load();
+      const dayTodos = todos.map((t, idx) => ({ ...t, idx })).filter((t) => t.date === selectedDate);
+      const dayGcal = gcalEventsByDate[selectedDate] || [];
+
+      if (!dayTodos.length && !dayGcal.length) {
+        const empty = document.createElement('li');
+        empty.className = 'calendar-day-empty';
+        empty.textContent = 'Nichts geplant.';
+        dayItems.appendChild(empty);
+      }
+
+      dayTodos.forEach((item) => {
+        const li = document.createElement('li');
+        li.className = 'todo-item' + (item.done ? ' done' : '');
+
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.checked = !!item.done;
+        cb.addEventListener('change', () => {
+          const current = SathoTodos.load();
+          current[item.idx].done = cb.checked;
+          SathoTodos.save(current);
+        });
+
+        const span = document.createElement('span');
+        span.textContent = item.text;
+
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'todo-remove';
+        removeBtn.textContent = '✕';
+        removeBtn.addEventListener('click', () => {
+          const current = SathoTodos.load();
+          current.splice(item.idx, 1);
+          SathoTodos.save(current);
+        });
+
+        li.appendChild(cb);
+        li.appendChild(span);
+        li.appendChild(removeBtn);
+        dayItems.appendChild(li);
+      });
+
+      dayGcal.forEach((ev) => {
+        const li = document.createElement('li');
+        li.className = 'cal-gcal-item';
+        li.textContent = (ev.time ? ev.time + ' – ' : '') + ev.title;
+        dayItems.appendChild(li);
+      });
+    }
+
+    dayCloseBtn.addEventListener('click', () => {
+      selectedDate = null;
+      dayPanel.style.display = 'none';
+      renderGrid();
+    });
+
+    dayAddForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const text = dayAddInput.value.trim();
+      if (!text || !selectedDate) return;
+      const items = SathoTodos.load();
+      items.push({ text, done: false, date: selectedDate });
+      SathoTodos.save(items);
+      dayAddInput.value = '';
+    });
+
+    prevBtn.addEventListener('click', () => {
+      viewDate.setMonth(viewDate.getMonth() - 1);
+      renderGrid();
+      fetchGcalEventsForMonth();
+    });
+    nextBtn.addEventListener('click', () => {
+      viewDate.setMonth(viewDate.getMonth() + 1);
+      renderGrid();
+      fetchGcalEventsForMonth();
+    });
+    todayBtn.addEventListener('click', () => {
+      viewDate = new Date();
+      viewDate.setDate(1);
+      selectedDate = toISODate(new Date());
+      renderGrid();
+      renderDayPanel();
+      fetchGcalEventsForMonth();
+    });
+
+    window.addEventListener('sathonet:todos-changed', () => {
+      renderGrid();
+      renderDayPanel();
+    });
+
+    // ----- Google Kalender (optional, braucht eigene OAuth-Client-ID) -----
+    function getClientId() {
+      try { return localStorage.getItem(GCAL_CLIENT_ID_KEY) || ''; } catch (e) { return ''; }
+    }
+    function setClientId(id) {
+      try { localStorage.setItem(GCAL_CLIENT_ID_KEY, id); } catch (e) {}
+    }
+
+    function showClientIdSetup() {
+      gcalControls.innerHTML = `
+        <div class="gcal-setup">
+          <input type="text" id="gcal-client-id-input" placeholder="Google OAuth Client-ID einfügen">
+          <button type="button" class="gcal-btn" id="gcal-client-id-save">Speichern &amp; verbinden</button>
+          <p class="gcal-setup-hint">Einmalig: Google Cloud Console → OAuth-Client (Webanwendung) → Autorisierter Ursprung: ${window.location.origin}</p>
+        </div>
+      `;
+      document.getElementById('gcal-client-id-save').addEventListener('click', () => {
+        const val = document.getElementById('gcal-client-id-input').value.trim();
+        if (!val) return;
+        setClientId(val);
+        renderGcalControls();
+        connectGoogle();
+      });
+    }
+
+    function renderGcalControls() {
+      gcalControls.innerHTML = `
+        <button type="button" class="gcal-btn" id="gcal-connect-btn">🔗 Google Kalender verbinden</button>
+        <span class="gcal-status" id="gcal-status"></span>
+        <button type="button" class="gcal-btn" id="gcal-reset-btn" style="margin-left:auto;">Client-ID ändern</button>
+      `;
+      document.getElementById('gcal-connect-btn').addEventListener('click', connectGoogle);
+      document.getElementById('gcal-reset-btn').addEventListener('click', showClientIdSetup);
+      updateGcalStatus();
+    }
+
+    function updateGcalStatus() {
+      const statusEl = document.getElementById('gcal-status');
+      if (statusEl) statusEl.textContent = gcalAccessToken ? 'Verbunden ✅' : '';
+    }
+
+    function connectGoogle() {
+      const clientId = getClientId();
+      if (!clientId) { showClientIdSetup(); return; }
+
+      if (!window.google || !google.accounts || !google.accounts.oauth2) {
+        showToast('Google-Anmeldung lädt noch, bitte kurz warten und erneut klicken.');
+        return;
+      }
+
+      if (!gcalTokenClient) {
+        gcalTokenClient = google.accounts.oauth2.initTokenClient({
+          client_id: clientId,
+          scope: 'https://www.googleapis.com/auth/calendar.readonly',
+          callback: (resp) => {
+            if (resp.error) {
+              showToast('Verbindung zu Google fehlgeschlagen.');
+              return;
+            }
+            gcalAccessToken = resp.access_token;
+            updateGcalStatus();
+            fetchGcalEventsForMonth();
+          },
+        });
+      }
+      gcalTokenClient.requestAccessToken();
+    }
+
+    function fetchGcalEventsForMonth() {
+      if (!gcalAccessToken) return;
+      const year = viewDate.getFullYear();
+      const month = viewDate.getMonth();
+      const timeMin = new Date(year, month, 1).toISOString();
+      const timeMax = new Date(year, month + 1, 1).toISOString();
+
+      fetch(
+        `https://www.googleapis.com/calendar/v3/events?calendarId=primary&timeMin=${encodeURIComponent(timeMin)}&timeMax=${encodeURIComponent(timeMax)}&singleEvents=true&orderBy=startTime`,
+        { headers: { Authorization: 'Bearer ' + gcalAccessToken } }
+      )
+        .then((r) => { if (!r.ok) throw new Error('gcal fetch failed'); return r.json(); })
+        .then((data) => {
+          gcalEventsByDate = {};
+          (data.items || []).forEach((ev) => {
+            let dateStr = '';
+            let time = '';
+            if (ev.start && ev.start.date) {
+              dateStr = ev.start.date;
+            } else if (ev.start && ev.start.dateTime) {
+              const d = new Date(ev.start.dateTime);
+              dateStr = toISODate(d);
+              time = d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+            }
+            if (!dateStr) return;
+            if (!gcalEventsByDate[dateStr]) gcalEventsByDate[dateStr] = [];
+            gcalEventsByDate[dateStr].push({ title: ev.summary || '(ohne Titel)', time });
+          });
+          renderGrid();
+          renderDayPanel();
+        })
+        .catch(() => showToast('Google-Termine konnten nicht geladen werden.'));
+    }
+
+    if (getClientId()) {
+      renderGcalControls();
+    } else {
+      showClientIdSetup();
+    }
+
+    renderGrid();
+    renderDayPanel();
+  })();
+
+  // ===== Shortcuts: oft besuchte Seiten (selbst verwaltet) =====
+  (function shortcuts() {
+    const STORAGE_KEY = 'sathonet_shortcuts';
+    const grid = document.getElementById('shortcuts-grid');
+    const bookmarkletLink = document.getElementById('bookmarklet-link');
+    const toast = document.getElementById('toast');
+    let dragSrcIndex = null;
+
+    function showToast(msg) {
+      toast.textContent = msg;
+      toast.classList.add('show');
+      clearTimeout(showToast._timer);
+      showToast._timer = setTimeout(() => toast.classList.remove('show'), 2800);
+    }
+
+    function load() {
+      try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch (e) { return []; }
+    }
+    function save(list) {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); } catch (e) {}
+    }
+    function normalizeUrl(url) {
+      if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+      return url;
+    }
+    function faviconFor(url) {
+      try {
+        const host = new URL(url).hostname;
+        return `https://www.google.com/s2/favicons?sz=64&domain=${host}`;
+      } catch (e) {
+        return '';
+      }
+    }
+
+    function addShortcut(rawUrl, rawTitle) {
+      let url;
+      try {
+        url = normalizeUrl(rawUrl);
+        new URL(url); // wirft, falls ungültig
+      } catch (e) {
+        showToast('Ungültiger Link, konnte nicht hinzugefügt werden.');
+        return;
+      }
+      const list = load();
+      if (list.some((item) => item.url === url)) {
+        showToast('Ist schon in deinen Shortcuts.');
+        return;
+      }
+      let title = (rawTitle || '').trim();
+      if (!title) {
+        try { title = new URL(url).hostname; } catch (e) { title = url; }
+      }
+      list.push({ title, url });
+      save(list);
+      showToast('✅ Hinzugefügt: ' + title);
+      render();
+    }
+
+    function render() {
+      const list = load();
+      grid.innerHTML = '';
+
+      list.forEach((item, idx) => {
+        const a = document.createElement('a');
+        a.className = 'shortcut-tile';
+        a.href = item.url;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        a.draggable = true;
+
+        a.addEventListener('dragstart', (e) => {
+          dragSrcIndex = idx;
+          a.classList.add('dragging');
+          e.dataTransfer.effectAllowed = 'move';
+        });
+        a.addEventListener('dragend', () => {
+          a.classList.remove('dragging');
+        });
+        a.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          if (dragSrcIndex !== null && dragSrcIndex !== idx) a.classList.add('drag-over');
+        });
+        a.addEventListener('dragleave', () => {
+          a.classList.remove('drag-over');
+        });
+        a.addEventListener('drop', (e) => {
+          e.preventDefault();
+          a.classList.remove('drag-over');
+          if (dragSrcIndex === null || dragSrcIndex === idx) return;
+          const current = load();
+          const [moved] = current.splice(dragSrcIndex, 1);
+          current.splice(idx, 0, moved);
+          save(current);
+          dragSrcIndex = null;
+          render();
+        });
+
+        const img = document.createElement('img');
+        img.src = faviconFor(item.url);
+        img.alt = '';
+        a.appendChild(img);
+
+        const span = document.createElement('span');
+        span.textContent = item.title || new URL(item.url).hostname;
+        a.appendChild(span);
+
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'shortcut-remove';
+        removeBtn.type = 'button';
+        removeBtn.textContent = '✕';
+        removeBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const current = load();
+          current.splice(idx, 1);
+          save(current);
+          render();
+        });
+        a.appendChild(removeBtn);
+
+        grid.appendChild(a);
+      });
+
+      const addTile = document.createElement('div');
+      addTile.className = 'shortcut-tile shortcut-add';
+      addTile.innerHTML = '<span class="plus">+</span><span>Hinzufügen</span>';
+      addTile.addEventListener('click', () => renderForm());
+      grid.appendChild(addTile);
+    }
+
+    function renderForm() {
+      const form = document.createElement('div');
+      form.className = 'shortcut-form';
+      form.innerHTML = `
+        <input type="text" id="sc-name" placeholder="Name (optional)">
+        <input type="text" id="sc-url" placeholder="z. B. reddit.com">
+        <div class="shortcut-form-actions">
+          <button type="button" class="cancel-btn">Abbrechen</button>
+          <button type="button" class="save-btn">Speichern</button>
+        </div>
+      `;
+      grid.appendChild(form);
+      const urlInput = form.querySelector('#sc-url');
+      urlInput.focus();
+
+      form.querySelector('.cancel-btn').addEventListener('click', render);
+      form.querySelector('.save-btn').addEventListener('click', () => {
+        const rawUrl = urlInput.value.trim();
+        if (!rawUrl) return;
+        const url = normalizeUrl(rawUrl);
+        const title = form.querySelector('#sc-name').value.trim();
+        const list = load();
+        list.push({ title, url });
+        save(list);
+        render();
+      });
+      urlInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') form.querySelector('.save-btn').click();
+      });
+    }
+
+    // Bookmarklet: erfasst die aktuell offene Seite und schickt sie hierher
+    const origin = window.location.origin;
+    const bookmarkletCode =
+      "(function(){var u=encodeURIComponent(location.href),t=encodeURIComponent(document.title||location.hostname);" +
+      "window.open('" + origin + "/?add='+u+'&title='+t,'_blank');})();";
+    bookmarkletLink.href = 'javascript:' + bookmarkletCode;
+    bookmarkletLink.addEventListener('click', (e) => {
+      // Direkter Klick (statt Ziehen in die Lesezeichen-Leiste) würde hier nur die Startseite selbst erfassen
+      e.preventDefault();
+      alert('Diesen Button per Drag & Drop in deine Lesezeichen-Leiste ziehen.\nDanach auf jeder Webseite draufklicken, um sie als Shortcut zu speichern.');
+    });
+
+    // Auto-Add, wenn über das Bookmarklet aufgerufen (?add=...&title=...)
+    const params = new URLSearchParams(window.location.search);
+    const addUrl = params.get('add');
+    if (addUrl) {
+      addShortcut(addUrl, params.get('title'));
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+
+    render();
+  })();
+  } // Ende bootDashboard
+
+  // Reihenfolge: Account-Stand holen (max. 3 s warten), dann rendern.
+  Account.initUi();
+  Promise.race([
+    Account.loadPrefs(),
+    new Promise(function (resolve) { setTimeout(function () { resolve(false); }, 3000); })
+  ]).then(bootDashboard, bootDashboard);
+</script>
+
+</body>
+</html>

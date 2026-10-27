@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Werkzeugkasten – Satho-Net</title>
+<link rel="icon" href="data:,">
+<style>
+  :root {
+    --bg-base: #131110;
+    --bg-base-2: #1c1815;
+    --ink: #f4ede4;
+    --ink-dim: #b9ada0;
+    --ink-faint: #7c7268;
+    --accent-a: #f6a24c;
+    --accent-b: #ef5da8;
+    --glass: rgba(255, 255, 255, 0.055);
+    --glass-border: rgba(244, 237, 228, 0.14);
+    --glass-border-hover: rgba(244, 237, 228, 0.28);
+    --radius: 20px;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { min-height: 100%; }
+
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    color: var(--ink);
+    line-height: 1.6;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    isolation: isolate;
+  }
+
+  /* Hintergrund wie auf der Startseite: Bild, Abdunklung, Farbschimmer.
+     Die Stärke der Abdunklung kommt aus --bg-dim (Regler auf der Startseite). */
+  #bg-image-layer {
+    position: fixed;
+    inset: 0;
+    z-index: -2;
+    background-image: var(--wallpaper, url('/img/default-bg.png'));
+    background-size: cover;
+    background-position: center;
+    pointer-events: none;
+  }
+  #bg-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    opacity: var(--bg-dim, 0.8);
+    background: linear-gradient(160deg, rgba(19, 17, 16, 0.95) 0%, rgba(19, 17, 16, 0.76) 60%, rgba(19, 17, 16, 0.98) 100%);
+    pointer-events: none;
+  }
+  body::before {
+    content: "";
+    position: fixed;
+    inset: -10%;
+    z-index: -3;
+    background:
+      radial-gradient(circle at 15% 0%, rgba(246, 162, 76, 0.18), transparent 45%),
+      radial-gradient(circle at 90% 20%, rgba(239, 93, 168, 0.15), transparent 42%),
+      linear-gradient(160deg, var(--bg-base) 0%, var(--bg-base-2) 100%);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    body::before { animation: auroraFloat 28s ease-in-out infinite alternate; }
+  }
+  @keyframes auroraFloat {
+    0% { transform: translate3d(0, 0, 0) scale(1); }
+    50% { transform: translate3d(-2%, 2%, 0) scale(1.04); }
+    100% { transform: translate3d(2%, -1.5%, 0) scale(1); }
+  }
+
+  main {
+    width: 100%;
+    max-width: 960px;
+    padding: 92px 24px 80px;
+  }
+
+  .page-head { margin-bottom: 30px; }
+  .page-head h1 {
+    margin: 0 0 8px;
+    font-size: clamp(1.7rem, 1.2rem + 1.8vw, 2.4rem);
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .page-head h1 .ic { width: 0.92em; height: 0.92em; color: var(--accent-a); }
+  .page-head p {
+    margin: 0;
+    max-width: 640px;
+    color: var(--ink-dim);
+    font-size: 0.92rem;
+  }
+
+  .section-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.74rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin: 34px 0 14px;
+  }
+  .section-label::before {
+    content: "";
+    width: 16px;
+    height: 2px;
+    border-radius: 2px;
+    background: linear-gradient(90deg, var(--accent-a), var(--accent-b));
+  }
+
+  /* ===== Werkzeug-Gruppen ===== */
+  .tools-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 16px;
+  }
+
+  .tool-group {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius);
+    padding: 18px 20px 14px;
+    backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    transition: border-color 0.25s ease;
+  }
+  .tool-group:hover { border-color: var(--glass-border-hover); }
+
+  .tool-group-head {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-size: 0.76rem;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--ink-dim);
+    padding-bottom: 11px;
+    margin-bottom: 4px;
+    border-bottom: 1px solid rgba(244, 237, 228, 0.09);
+  }
+  .tool-group-ico { display: inline-flex; color: var(--accent-a); }
+  .tool-group-ico .ic { width: 17px; height: 17px; }
+
+  .tool-list { list-style: none; margin: 0; padding: 0; }
+  .tool-list a {
+    display: block;
+    padding: 9px 10px;
+    margin: 0 -10px;
+    border-radius: 12px;
+    text-decoration: none;
+    color: var(--ink);
+    transition: background 0.2s ease, transform 0.2s ease;
+  }
+  .tool-list a:hover {
+    background: rgba(255, 255, 255, 0.06);
+    transform: translateX(2px);
+  }
+  .tool-name { display: block; font-size: 0.9rem; font-weight: 550; }
+  .tool-list a:hover .tool-name { color: var(--accent-a); }
+  .tool-hint {
+    display: block;
+    font-size: 0.76rem;
+    line-height: 1.45;
+    color: var(--ink-faint);
+    margin-top: 1px;
+  }
+
+  footer {
+    color: var(--ink-faint);
+    font-size: 0.85rem;
+    padding: 8px 24px 28px;
+    text-align: center;
+  }
+  footer a { color: var(--ink-dim); }
+
+  @media (max-width: 560px) {
+    main { padding: 78px 16px 60px; }
+    .tool-group { padding: 16px 16px 12px; }
+  }
+</style>
+
+<!-- Icon-Set -->
+<link rel="stylesheet" href="/icons.css">
+<script src="/icons.js" defer></script>
+<!-- Startseiten-Button und gemeinsame Helfer -->
+<script src="/auth-common.js" defer></script>
+
+<!-- Regler für die Hintergrund-Verdunklung -->
+<script src="/bg-dim.js"></script>
+</head>
+<body>
+
+<div id="bg-image-layer"></div>
+<div id="bg-scrim"></div>
+
+<main>
+  <div class="page-head">
+    <h1><span data-ic="wrench"></span>Werkzeugkasten</h1>
+    <p>Nachschlagewerke und Werkzeuge, die man als Rechner- und Server-Betreiber immer wieder braucht. Alle Links öffnen in einem neuen Tab.</p>
+  </div>
+
+  <div class="section-label">Sammlung</div>
+  <div class="tools-grid">
+
+    <div class="tool-group">
+      <div class="tool-group-head"><span class="tool-group-ico" data-ic="shield"></span>Sicherheit &amp; Prüfen</div>
+      <ul class="tool-list">
+        <li><a href="https://www.virustotal.com" target="_blank" rel="noopener noreferrer">
+          <span class="tool-name">VirusTotal</span><span class="tool-hint">Dateien und Links von über 70 Scannern prüfen lassen</span></a></li>
+        <li><a href="https://haveibeenpwned.com" target="_blank" rel="noopener noreferrer">
+          <span class="tool-name">Have I Been Pwned</span><span class="tool-hint">Steckt deine E-Mail-Adresse in einem Datenleck?</span></a></li>
+        <li><a href="https://www.malwarebytes.com/mwb-download" target="_blank" rel="noopener noreferrer">
+          <span class="tool-name">Malwarebytes</span><span class="tool-hint">Zweitmeinung, wenn der eigene Scanner nichts findet</span></a></li>
+        <li><a href="https://www.bsi.bund.de/DE/Themen/Verbraucherinnen-und-Verbraucher/verbraucherinnen-und-verbraucher_node.html" target="_blank" rel="noopener noreferrer">
+          <span class="tool-name">BSI für Bürger</span><span class="tool-hint">Warnungen und Anleitungen vom Bundesamt</span></a></li>
+      </ul>
+    </div>
+
+    <div class="tool-group">
+      <div class="tool-group-head"><span class="tool-group-ico" data-ic="hardDrive"></span>System &amp; Wartung</div>
+      <ul class="tool-list">
+        <li><a href="https://learn.microsoft.com/sysinternals/" target="_blank" rel="noopener noreferrer">
+          <span class="tool-name">Sysinternals Suite</span><span class="tool-hint">Process Explorer, Autoruns &amp; Co. von Microsoft</span></a></li>
+        <li><a href="https://crystalmark.info/en/software/crystaldiskinfo/" target="_blank" rel="noopener noreferrer">
+          <span class="tool-name">CrystalDiskInfo</span><span class="tool-hint">SMART-Werte: wie gesund sind die Festplatten?</span></a></li>
+        <li><a href="https://www.hwinfo.com" target="_blank" rel="noopener noreferrer">
+          <span class="tool-name">HWiNFO</span><span class="tool-hint">Temperaturen, Sensoren, verbaute Hardware</span></a></li>
+        <li><a href="https://diskanalyzer.com" target="_blank" rel="noopener noreferrer">
+          <span class="tool-name">WizTree</span><span class="tool-hint">Zeigt in Sekunden, wo der Speicherplatz geblieben ist</span></a></li>
+        <li><a href="https://ninite.com" target="_blank" rel="noopener noreferrer">
+          <span class="tool-name">Ninite</span><span class="tool-hint">Mehrere Programme in einem Rutsch installieren</span></a></li>
+      </ul>
+    </div>
+
+    <div class="tool-group">
+      <div class="tool-group-head"><span class="tool-group-ico" data-ic="wifi"></span>Netz &amp; eigener Server</div>
+      <ul class="tool-list">
+        <li><a href="https://www.ssllabs.com/ssltest/" target="_blank" rel="noopener noreferrer">
+          <span class="tool-name">SSL Labs</span><span class="tool-hint">TLS-Zertifikat und Verschlüsselung deiner Domain testen</span></a></li>
+        <li><a href="https://securityheaders.com" target="_blank" rel="noopener noreferrer">
+          <span class="tool-name">SecurityHeaders</span><span class="tool-hint">Prüft die HTTP-Header, die dein Server ausliefert</span></a></li>
+        <li><a href="https://speed.cloudflare.com" target="_blank" rel="noopener noreferrer">
+          <span class="tool-name">Cloudflare Speed</span><span class="tool-hint">Leitung messen, ohne Werbung und Zusatzsoftware</span></a></li>
+        <li><a href="https://uptimerobot.com" target="_blank" rel="noopener noreferrer">
+          <span class="tool-name">UptimeRobot</span><span class="tool-hint">Meldet sich, wenn dein Server nicht erreichbar ist</span></a></li>
+        <li><a href="https://crontab.guru" target="_blank" rel="noopener noreferrer">
+          <span class="tool-name">crontab.guru</span><span class="tool-hint">Cron-Ausdrücke bauen und im Klartext gegenlesen</span></a></li>
+      </ul>
+    </div>
+
+    <div class="tool-group">
+      <div class="tool-group-head"><span class="tool-group-ico" data-ic="terminal"></span>Linux &amp; Kommandozeile</div>
+      <ul class="tool-list">
+        <li><a href="https://wiki.archlinux.org" target="_blank" rel="noopener noreferrer">
+          <span class="tool-name">Arch Wiki</span><span class="tool-hint">Die beste Linux-Doku – hilft auch bei anderen Distributionen</span></a></li>
+        <li><a href="https://www.digitalocean.com/community/tutorials" target="_blank" rel="noopener noreferrer">
+          <span class="tool-name">DigitalOcean Tutorials</span><span class="tool-hint">Server einrichten, Schritt für Schritt erklärt</span></a></li>
+        <li><a href="https://explainshell.com" target="_blank" rel="noopener noreferrer">
+          <span class="tool-name">explainshell</span><span class="tool-hint">Zerlegt einen Befehl und erklärt jeden Schalter</span></a></li>
+        <li><a href="https://www.shellcheck.net" target="_blank" rel="noopener noreferrer">
+          <span class="tool-name">ShellCheck</span><span class="tool-hint">Findet Fehler in Shell-Skripten, bevor sie laufen</span></a></li>
+        <li><a href="https://www.ventoy.net" target="_blank" rel="noopener noreferrer">
+          <span class="tool-name">Ventoy</span><span class="tool-hint">Ein USB-Stick, beliebig viele ISO-Dateien zum Booten</span></a></li>
+      </ul>
+    </div>
+
+  </div>
+</main>
+
+<footer>
+  watchlist.satho-net.de &middot; <a href="/">Startseite</a>
+  &middot; <a href="https://netpurple.net" target="_blank" rel="noopener noreferrer">netpurple.net</a>
+</footer>
+
+<script>
+  // Hintergrundbild von der Startseite übernehmen (die Verdunklung setzt bg-dim.js)
+  (function applySharedBackground() {
+    try {
+      var wallpaper = localStorage.getItem('sathonet_bg_image');
+      if (wallpaper) document.documentElement.style.setProperty('--wallpaper', 'url("' + wallpaper + '")');
+    } catch (e) {}
+  })();
+</script>
+
+</body>
+</html>

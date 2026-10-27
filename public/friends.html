@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+<title>👥 Freunde – Watchlist</title>
+<link rel="stylesheet" href="index.css">
+<style>
+  body { display: block; align-items: stretch; }
+  /* Hintergrundbild direkt auf dem Body – überlagert zuverlässig den index.css-Gradient.
+     --wallpaper wird per JS (auth-common.js) auf ein eigenes Bild gesetzt, falls auf der
+     Startseite eines gewählt wurde; sonst greift das Standardbild. Der Verlauf davor
+     dunkelt es ab, damit alles gut lesbar bleibt. */
+  body {
+    --wallpaper: url('/img/default-bg.png');
+    background:
+      /* Gleiche Kurve wie auf der Startseite: selbst ganz rechts bleibt der
+         Hintergrund sichtbar, statt komplett überdeckt zu werden. */
+      linear-gradient(160deg,
+        rgba(19,17,16, calc(0.95 * var(--bg-dim, 0.8))) 0%,
+        rgba(19,17,16, calc(0.75 * var(--bg-dim, 0.8))) 55%,
+        rgba(19,17,16, calc(0.98 * var(--bg-dim, 0.8))) 100%),
+      var(--wallpaper) center center / cover no-repeat fixed,
+      #14120f !important;
+  }
+
+  .fr-app { width: 100%; max-width: 1300px; margin: 0 auto; padding: 16px; box-sizing: border-box; }
+
+  .fr-header { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 22px; }
+  .fr-header h1 { font-size: 1.8rem; margin: 0; }
+  .fr-back { padding: 9px 16px; background: linear-gradient(135deg, #374151, #4b5563); color: #fff; border-radius: var(--radius-small); text-decoration: none; font-size: 0.9rem; }
+  .fr-back:hover { transform: translateY(-2px); }
+  .fr-tabs { display: flex; gap: 8px; margin-left: auto; flex-wrap: wrap; }
+  .ftab { padding: 9px 16px; border-radius: var(--radius-small); border: 1px solid var(--border-medium); background: rgba(255,255,255,0.05); color: var(--text-secondary); cursor: pointer; font-size: 0.92rem; transition: all 0.2s ease; }
+  .ftab:hover { color: var(--text-color); }
+  .ftab.active { background: var(--gradient-accent); color: #fff; border-color: transparent; }
+
+  .fr-panel { background: rgba(255,255,255,0.04); border: 1px solid var(--border-subtle); border-radius: var(--radius-large); padding: 18px; margin-bottom: 20px; }
+  .fr-panel h2 { font-size: 1.15rem; margin: 0 0 14px; }
+
+  .fr-bar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+  .fr-bar input, .fr-bar select {
+    padding: 10px 14px; border-radius: var(--radius-small); border: 1px solid var(--border-medium);
+    background: var(--bg-secondary); color: var(--text-color); font-size: 0.95rem;
+  }
+  .fr-bar input { flex: 1; min-width: 180px; }
+  .btn-pink { background: var(--gradient-accent); color: #fff; }
+
+  .fr-row {
+    display: flex; align-items: center; gap: 12px; padding: 10px 12px;
+    background: rgba(255,255,255,0.05); border-radius: var(--radius-small); margin-bottom: 8px;
+  }
+  .fr-avatar {
+    width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fff;
+    background: var(--gradient-accent);
+  }
+  .fr-row .fr-name { flex: 1; min-width: 0; font-weight: 600; }
+  .fr-row .fr-sub { font-size: 0.8rem; color: var(--text-secondary); font-weight: 400; }
+  .fr-row button { padding: 6px 12px; font-size: 0.82rem; }
+  .fr-empty { color: var(--text-muted); padding: 14px; text-align: center; }
+
+  /* Listen */
+  .list-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
+  .list-card {
+    background: rgba(255,255,255,0.05); border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-medium); padding: 16px; cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  }
+  .list-card:hover { transform: translateY(-4px); box-shadow: var(--glow-accent); border-color: rgba(99,102,241,0.35); }
+  .list-card h3 { margin: 0 0 6px; font-size: 1.05rem; }
+  .list-card .lc-meta { font-size: 0.8rem; color: var(--text-secondary); }
+  .list-kind { display: inline-block; font-size: 0.7rem; padding: 2px 8px; border-radius: 10px; background: rgba(99,102,241,0.18); color: #c7d2fe; margin-top: 8px; }
+
+  /* Listen-Detail */
+  #list-detail { display: none; }
+  .detail-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+  .detail-head h2 { margin: 0; }
+  .item-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; }
+  .item-card { background: rgba(255,255,255,0.05); border: 1px solid var(--border-subtle); border-radius: var(--radius-medium); overflow: hidden; display: flex; flex-direction: column; }
+  .item-card .ic-cover { width: 100%; aspect-ratio: 2 / 3; background-size: cover; background-position: center; background-color: var(--bg-tertiary); }
+  .item-card.game .ic-cover { aspect-ratio: 16 / 9; }
+  .item-card .ic-body { padding: 8px 10px 10px; display: flex; flex-direction: column; gap: 4px; flex: 1; }
+  .item-card strong { font-size: 0.85rem; line-height: 1.2; }
+  .item-card .ic-meta { font-size: 0.72rem; color: var(--text-secondary); }
+  .item-card button { margin-top: auto; padding: 6px; font-size: 0.78rem; background: linear-gradient(135deg, #b91c1c, #dc2626); }
+
+  .search-results { display: flex; flex-direction: column; gap: 8px; max-height: 360px; overflow-y: auto; margin-top: 10px; }
+  .search-result { display: flex; gap: 12px; align-items: center; padding: 8px; background: rgba(255,255,255,0.05); border-radius: var(--radius-small); }
+  .search-result img { width: 54px; height: 80px; object-fit: cover; border-radius: 6px; flex-shrink: 0; background: #222; }
+  .search-result .sr-info { flex: 1; min-width: 0; }
+  .search-result .sr-info strong { display: block; font-size: 0.92rem; }
+  .search-result .sr-info span { font-size: 0.78rem; color: var(--text-secondary); }
+  .search-result button { padding: 6px 12px; font-size: 0.82rem; flex-shrink: 0; }
+
+  /* Freund-Profil */
+  .fr-row-click { cursor: pointer; transition: background 0.15s ease; }
+  .fr-row-click:hover { background: rgba(99,102,241,0.12); }
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; }
+  .stat-card {
+    background: rgba(255,255,255,0.05); border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-medium); padding: 14px; text-align: center;
+  }
+  .stat-card .sc-num {
+    font-size: 1.7rem; font-weight: 700;
+    background: var(--gradient-accent);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .stat-card .sc-label { font-size: 0.78rem; color: var(--text-secondary); margin-top: 4px; }
+
+  /* Listen-Sektionen (gemischte Listen) */
+  .list-section { margin-bottom: 20px; }
+  .list-section-title { font-size: 0.95rem; margin: 0 0 10px; color: var(--text-secondary); }
+
+  /* Eintrag-Aktionen + Kommentar */
+  .item-card .ic-cover { position: relative; }
+  .item-card .ic-actions { margin-top: auto; display: flex; gap: 6px; }
+  .item-card .ic-actions button { margin-top: 0; flex: 1; }
+  .item-card .ic-comment-btn { background: linear-gradient(135deg, #374151, #4b5563) !important; }
+  .ic-comment {
+    position: absolute; top: 6px; right: 6px; cursor: help;
+    width: 26px; height: 26px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(17,24,39,0.85); font-size: 0.8rem;
+  }
+  .ic-comment[data-tip]:hover::after {
+    content: attr(data-tip);
+    position: absolute; top: 110%; right: 0;
+    background: #1f2937; color: #fff; padding: 7px 10px; border-radius: 8px;
+    font-size: 0.74rem; line-height: 1.35; width: max-content; max-width: 200px;
+    white-space: normal; text-align: left; z-index: 60; font-weight: 400;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.45);
+  }
+
+  /* "Aus meiner Sammlung"-Picker */
+  .mine-block { margin-top: 14px; }
+  .btn-ghost { background: rgba(255,255,255,0.06); border: 1px solid var(--border-medium); color: var(--text-color); }
+
+  /* ===================================================================
+     Design-Refresh: warmer Glas-Look passend zur Startseite
+     =================================================================== */
+  :root {
+    --accent-primary: #f6a24c;
+    --accent-secondary: #ef5da8;
+    --gradient-accent: linear-gradient(135deg, #f6a24c, #ef5da8);
+    --glow-accent: 0 14px 34px -12px rgba(246,162,76,0.45), 0 6px 18px rgba(0,0,0,0.4);
+  }
+
+  /* Kopfzeile: Titel mit warmem Verlaufston */
+  .fr-header h1 {
+    font-size: 2rem;
+    letter-spacing: -0.01em;
+    background: linear-gradient(120deg, #ffd9a8, #ffb0d4);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  /* Tabs als Glas-Pillen */
+  .ftab {
+    border-radius: 999px;
+    border-color: rgba(244,237,228,0.14);
+    background: rgba(255,255,255,0.055);
+    backdrop-filter: blur(12px) saturate(140%);
+    -webkit-backdrop-filter: blur(12px) saturate(140%);
+  }
+  .ftab:hover { border-color: rgba(244,237,228,0.28); }
+  .ftab.active { box-shadow: 0 8px 22px -8px rgba(246,162,76,0.55); }
+
+  /* Panels & Karten: frostiges Glas */
+  .fr-panel, .list-card, .stat-card, .item-card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(244,237,228,0.12);
+    backdrop-filter: blur(16px) saturate(140%);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+  }
+  .fr-panel { border-radius: 18px; }
+  .list-card { border-radius: 16px; }
+  .list-card:hover, .item-card:hover {
+    border-color: rgba(246,162,76,0.4);
+    box-shadow: var(--glow-accent);
+  }
+
+  /* Eingaben & Zeilen */
+  .fr-bar input, .fr-bar select {
+    background: rgba(255,255,255,0.06) !important;
+    border-color: rgba(244,237,228,0.14) !important;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+  .fr-row { background: rgba(255,255,255,0.05); }
+  .fr-row-click:hover { background: rgba(246,162,76,0.14); }
+  .list-kind { background: rgba(246,162,76,0.18); color: #ffd9a8; }
+  .btn-pink { box-shadow: 0 8px 22px -8px rgba(246,162,76,0.55); }
+</style>
+
+<!-- Icon-Set (ersetzt die Emojis der Oberfläche) -->
+<link rel="stylesheet" href="/icons.css">
+<script src="/icons.js" defer></script>
+
+<!-- Regler für die Hintergrund-Verdunklung -->
+<script src="/bg-dim.js"></script>
+</head>
+<body>
+  <div class="fr-app">
+    <header class="fr-header">
+      <h1>👥 Freunde</h1>
+      <div class="fr-tabs">
+        <button class="ftab active" data-view="friends">👥 Freunde</button>
+        <button class="ftab" data-view="lists">📋 Gemeinsame Listen</button>
+      </div>
+    </header>
+
+    <!-- ===== Freunde ===== -->
+    <section class="fr-view" id="view-friends">
+      <div id="friends-main">
+      <div class="fr-panel">
+        <h2>Freund hinzufügen</h2>
+        <div class="fr-bar">
+          <input type="text" id="user-search" placeholder="Benutzername suchen (min. 2 Zeichen)..." oninput="FR.searchUsers()">
+        </div>
+        <div id="user-search-results"></div>
+      </div>
+
+      <div class="fr-panel">
+        <h2>Offene Anfragen</h2>
+        <div id="incoming-requests"></div>
+        <div id="outgoing-requests"></div>
+      </div>
+
+      <div class="fr-panel">
+        <h2>Meine Freunde</h2>
+        <div id="friends-list"></div>
+      </div>
+      </div><!-- /#friends-main -->
+
+      <!-- ===== Freund-Profil ===== -->
+      <div id="friend-profile" style="display:none;">
+        <div class="fr-panel">
+          <div class="detail-head">
+            <button class="fr-back" onclick="FR.closeProfile()">← Freunde</button>
+            <div class="fr-avatar" id="profile-avatar" style="width:48px;height:48px;font-size:1.05rem;"></div>
+            <h2 id="profile-name">Freund</h2>
+          </div>
+          <div class="stat-grid" id="profile-stats"></div>
+        </div>
+
+        <div class="fr-panel">
+          <h2>🤝 Gemeinsam</h2>
+          <div class="item-grid" id="profile-common"></div>
+        </div>
+
+        <div class="fr-panel">
+          <h2 id="profile-movies-title">🎬 Filme &amp; Serien</h2>
+          <div class="item-grid" id="profile-movies"></div>
+        </div>
+
+        <div class="fr-panel">
+          <h2 id="profile-games-title">🎮 Games</h2>
+          <div class="item-grid" id="profile-games"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Listen ===== -->
+    <section class="fr-view" id="view-lists" style="display:none;">
+      <div id="lists-overview">
+        <div class="fr-panel">
+          <h2>Neue gemeinsame Liste</h2>
+          <div class="fr-bar">
+            <input type="text" id="new-list-name" placeholder="Listenname...">
+            <select id="new-list-kind">
+              <option value="mixed">Gemischt</option>
+              <option value="movies">Filme &amp; Serien</option>
+              <option value="games">Games</option>
+            </select>
+            <button class="btn-pink" onclick="FR.createList()">➕ Liste erstellen</button>
+          </div>
+        </div>
+        <div class="fr-panel">
+          <h2>Listen</h2>
+          <div class="list-grid" id="lists-grid"></div>
+        </div>
+      </div>
+
+      <!-- Detailansicht einer Liste -->
+      <div id="list-detail">
+        <div class="fr-panel">
+          <div class="detail-head">
+            <button class="fr-back" onclick="FR.closeList()">← Listen</button>
+            <h2 id="detail-name">Liste</h2>
+            <span class="list-kind" id="detail-kind"></span>
+            <span class="fr-sub" id="detail-owner" style="font-size:0.82rem;color:var(--text-secondary);"></span>
+            <button id="detail-delete" onclick="FR.deleteOrLeave()" style="margin-left:auto;background:linear-gradient(135deg,#b91c1c,#dc2626);">🗑️</button>
+          </div>
+
+          <h2 style="font-size:1rem;">Mitglieder</h2>
+          <div id="detail-members"></div>
+          <div class="fr-bar" id="add-member-bar" style="margin-top:10px;">
+            <select id="add-member-select"></select>
+            <button class="btn-pink" onclick="FR.addMember()">➕ Freund hinzufügen</button>
+          </div>
+        </div>
+
+        <div class="fr-panel">
+          <h2>Einträge hinzufügen</h2>
+          <div class="fr-bar">
+            <select id="item-source" style="display:none;" onchange="FR.onSourceChange()">
+              <option value="movie">Filme &amp; Serien</option>
+              <option value="game">Games</option>
+            </select>
+            <input type="text" id="item-search" placeholder="Titel suchen..." onkeydown="if(event.key==='Enter')FR.searchItems()">
+            <button class="btn-pink" onclick="FR.searchItems()">🔍 Suchen</button>
+          </div>
+          <div class="search-results" id="item-search-results"></div>
+          <div class="mine-block">
+            <button class="btn-ghost" id="mine-toggle" onclick="FR.toggleMinePicker()">📥 Aus meiner Sammlung übernehmen</button>
+            <div id="mine-picker" style="display:none;">
+              <div class="fr-bar" style="margin-top:10px;">
+                <input type="text" id="mine-search" placeholder="In meiner Sammlung filtern..." oninput="FR.renderMine()">
+              </div>
+              <div class="search-results" id="mine-results"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="fr-panel">
+          <h2 id="detail-items-title">Einträge</h2>
+          <div id="detail-items"></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div id="snackbar" class="snackbar" role="alert"></div>
+
+  <script src="auth-common.js"></script>
+  <script src="friends.js"></script>
+</body>
+</html>

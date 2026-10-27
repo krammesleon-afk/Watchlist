@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+<title>Watchlist – Start</title>
+<link rel="stylesheet" href="index.css">
+<style>
+  body {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+
+  .home-wrap {
+    width: 100%;
+    max-width: 1100px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 36px;
+  }
+
+  .home-header { text-align: center; }
+  .home-header h1 {
+    font-size: clamp(1.8rem, 4vw, 2.8rem);
+    margin: 0 0 8px;
+  }
+  .home-header p {
+    color: var(--text-secondary);
+    font-size: 1.05rem;
+    margin: 0;
+  }
+
+  .home-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 22px;
+    width: 100%;
+  }
+
+  .home-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 10px;
+    padding: 40px 28px;
+    border-radius: var(--radius-xl, 24px);
+    text-decoration: none;
+    color: var(--text-primary, #fff);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border-subtle, rgba(255,255,255,0.08));
+    backdrop-filter: blur(18px) saturate(160%);
+    transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+    cursor: pointer;
+  }
+  .home-card:hover {
+    transform: translateY(-8px);
+  }
+  .home-card .hc-icon { font-size: 3.4rem; line-height: 1; }
+  .home-card h2 { margin: 6px 0 0; font-size: 1.5rem; }
+  .home-card p {
+    margin: 0;
+    color: var(--text-secondary, #a1a8b6);
+    font-size: 0.95rem;
+  }
+
+  .hc-movies:hover,
+  .hc-games:hover,
+  .hc-friends:hover {
+    border-color: rgba(99, 102, 241, 0.45);
+    box-shadow: var(--glow-accent);
+  }
+
+</style>
+
+<!-- Icon-Set (ersetzt die Emojis der Oberfläche) -->
+<link rel="stylesheet" href="/icons.css">
+<script src="/icons.js" defer></script>
+</head>
+<body>
+  <div class="home-wrap">
+    <header class="home-header">
+      <h1 id="home-greeting">Was möchtest du heute?</h1>
+      <p>Wähle einen Bereich</p>
+    </header>
+
+    <div class="home-grid">
+      <a class="home-card hc-movies" id="card-movies" href="index.html?app=1">
+        <div class="hc-icon">🎬</div>
+        <h2>Filme &amp; Serien</h2>
+        <p>Watchlist, Suche, Ranking &amp; Statistiken</p>
+      </a>
+      <a class="home-card hc-games" id="card-games" href="games.html">
+        <div class="hc-icon">🎮</div>
+        <h2>Games</h2>
+        <p>Sammlung, Ranking &amp; Empfehlungen</p>
+      </a>
+      <a class="home-card hc-friends" id="card-friends" href="friends.html">
+        <div class="hc-icon">👥</div>
+        <h2>Freunde</h2>
+        <p>Freunde &amp; gemeinsame Listen</p>
+      </a>
+    </div>
+  </div>
+
+  <script src="auth-common.js"></script>
+  <script src="home.js"></script>
+</body>
+</html>

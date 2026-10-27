@@ -1,0 +1,16 @@
+# Abhängigkeiten
+node_modules/
+
+# Geheimnisse – nur .env.example gehört ins Repo
+.env
+.env.*
+!.env.example
+
+# Datenbank (enthält Nutzerdaten)
+*.db
+*.db-shm
+*.db-wal
+
+# Backups
+*.bak
+*.backup
