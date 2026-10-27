@@ -1,5 +1,20 @@
 # Watchlist App - Changelog 🎬
 
+## 27. Oktober 2026 – Aufräumen & GitHub
+
+### 🛡️ Sicherheit
+- **TMDB-Key aus dem Frontend entfernt** – alle TMDB-Anfragen laufen über den Server-Proxy (`tmdbFetch()` in `index.js`)
+- Neuer Proxy-Endpunkt für Streaming-Anbieter: `/api/tmdb/:type/:id/watch/providers`
+- `.env` kann verschlüsselt als `.env.gpg` ins Repo (`npm run env:encrypt` / `env:decrypt`)
+
+### 🔧 Technik
+- Git-Repo eingerichtet, `.gitignore` für `.env`, Datenbank und `node_modules`
+- `sqlite3` auf Version 5 festgelegt (Version 6 läuft nicht mit Node 18)
+- Ungenutztes Paket `nodemailer` entfernt
+- `package.json` aufgeräumt, `README.md` hinzugefügt
+
+---
+
 ## Version 3.0 - 23. März 2026 (Javis Cinema Edition)
 
 ### 🎨 Design - Cinema Vibe

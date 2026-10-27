@@ -1,15 +1,22 @@
 {
-  "name": "server",
-  "version": "1.0.0",
+  "name": "watchlist",
+  "version": "3.0.0",
+  "description": "Watchlist für Filme, Serien, Anime und Spiele – mit Rankings, Freunden und geteilten Listen",
   "main": "server.js",
+  "private": true,
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
+    "start": "node server.js",
+    "env:encrypt": "./scripts/env-verschluesseln.sh",
+    "env:decrypt": "./scripts/env-entschluesseln.sh"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/krammesleon-afk/Watchlist.git"
+  },
   "dependencies": {
     "bcrypt": "^6.0.0",
     "body-parser": "^2.2.0",
@@ -18,7 +25,6 @@
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.1",
-    "nodemailer": "^7.0.5",
-    "sqlite3": "^6.0.1"
+    "sqlite3": "^5.1.7"
   }
 }
