@@ -2,7 +2,7 @@
 
 Eine selbst gehostete Watchlist für **Filme, Serien, Anime und Spiele** – mit eigenen Rankings, Freunden und geteilten Listen.
 
-Live: https://watchlist.satho-net.de
+Live: https://watchlist.satho-net.de · 📜 [Changelog](CHANGELOG.md) · ⚖️ [Lizenz](LICENSE)
 
 ## Features
 
@@ -15,7 +15,7 @@ Live: https://watchlist.satho-net.de
 - **Geteilte Listen** mit mehreren Mitgliedern
 - **Konten** mit Login, Registrierung und Passwort-Reset
 - **Datei-Drop** (`/drop.html`) – Dateien und Text direkt zwischen eigenen Geräten und zu Freunden schicken (WebRTC, Daten gehen nicht über den Server)
-- **Watch-Party** (`/party.html`) – YouTube-Videos und Trailer gemeinsam und synchron schauen, mit Chat und Warteschlange
+- **Watch-Party** (`/party.html`) – Videos gemeinsam und synchron schauen: YouTube, Trailer, direkte Video-Links (mp4, webm, m3u8) oder eigene Dateien per Drag & Drop, mit Chat und Warteschlange
 - **Geheimlink** (`/secret.html`) – Text im Browser verschlüsseln, Link funktioniert genau einmal
 - **Benachrichtigungen** (`/push.html`) – Web-Push aufs Handy/den PC bei Logins und Freundschaftsanfragen, plus Webhook für eigene Skripte
 
@@ -179,6 +179,10 @@ Datei-Drop verbindet die Geräte direkt (STUN, kein eigener TURN-Server). Im sel
 ## Hinweis zu sqlite3
 
 `sqlite3` ist bewusst auf Version 5 festgelegt. Version 6 braucht Node ≥ 20 und eine neuere glibc und startet auf dem aktuellen Server nicht.
+
+## Changelog
+
+Alle Änderungen stehen im [CHANGELOG.md](CHANGELOG.md).
 
 ## Lizenz
 
