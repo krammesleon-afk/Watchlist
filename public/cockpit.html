@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Server-Cockpit – Satho-Net</title>
+<link rel="icon" href="data:,">
+<meta name="robots" content="noindex">
+<style>
+  [hidden] { display: none !important; }
+  :root {
+    --bg-base: #131110;
+    --bg-base-2: #1c1815;
+    --ink: #f4ede4;
+    --ink-dim: #b9ada0;
+    --ink-faint: #7c7268;
+    --accent-a: #f6a24c;
+    --accent-b: #ef5da8;
+    --glass: rgba(255, 255, 255, 0.055);
+    --glass-border: rgba(244, 237, 228, 0.14);
+    --glass-border-hover: rgba(244, 237, 228, 0.28);
+    --radius: 20px;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { min-height: 100%; }
+
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    color: var(--ink);
+    line-height: 1.6;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    isolation: isolate;
+  }
+
+  /* Hintergrund wie auf der Startseite: Bild, Abdunklung, Farbschimmer.
+     Die Stärke der Abdunklung kommt aus --bg-dim (Regler auf der Startseite). */
+  #bg-image-layer {
+    position: fixed;
+    inset: 0;
+    z-index: -2;
+    background-image: var(--wallpaper, url('/img/default-bg.png'));
+    background-size: cover;
+    background-position: center;
+    pointer-events: none;
+  }
+  #bg-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    opacity: var(--bg-dim, 0.8);
+    background: linear-gradient(160deg, rgba(19, 17, 16, 0.95) 0%, rgba(19, 17, 16, 0.76) 60%, rgba(19, 17, 16, 0.98) 100%);
+    pointer-events: none;
+  }
+  body::before {
+    content: "";
+    position: fixed;
+    inset: -10%;
+    z-index: -3;
+    background:
+      radial-gradient(circle at 15% 0%, rgba(246, 162, 76, 0.18), transparent 45%),
+      radial-gradient(circle at 90% 20%, rgba(239, 93, 168, 0.15), transparent 42%),
+      linear-gradient(160deg, var(--bg-base) 0%, var(--bg-base-2) 100%);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    body::before { animation: auroraFloat 28s ease-in-out infinite alternate; }
+  }
+  @keyframes auroraFloat {
+    0% { transform: translate3d(0, 0, 0) scale(1); }
+    50% { transform: translate3d(-2%, 2%, 0) scale(1.04); }
+    100% { transform: translate3d(2%, -1.5%, 0) scale(1); }
+  }
+
+  main {
+    width: 100%;
+    max-width: 1100px;
+    padding: 92px 24px 80px;
+  }
+
+  .page-head { margin-bottom: 30px; }
+  .page-head h1 {
+    margin: 0 0 8px;
+    font-size: clamp(1.7rem, 1.2rem + 1.8vw, 2.4rem);
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .page-head h1 .ic { width: 0.92em; height: 0.92em; color: var(--accent-a); }
+  .page-head p {
+    margin: 0;
+    max-width: 640px;
+    color: var(--ink-dim);
+    font-size: 0.92rem;
+  }
+
+  .section-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.74rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin: 34px 0 14px;
+  }
+  .section-label::before {
+    content: "";
+    width: 16px;
+    height: 2px;
+    border-radius: 2px;
+    background: linear-gradient(90deg, var(--accent-a), var(--accent-b));
+  }
+
+    footer {
+    color: var(--ink-faint);
+    font-size: 0.85rem;
+    padding: 8px 24px 28px;
+    text-align: center;
+  }
+  footer a { color: var(--ink-dim); }
+
+  
+  /* ===== Cockpit ===== */
+  .viz-root {
+    --surface-1: #1c1815;
+    --text-primary: var(--ink);
+    --text-secondary: var(--ink-dim);
+    --text-muted: var(--ink-faint);
+    --grid: rgba(244, 237, 228, 0.08);
+    --series-1: #3987e5;   /* blau  – Hauptwert bzw. empfangen */
+    --series-2: #d95926;   /* orange – gesendet */
+    --good: #0ca30c;
+    --warning: #fab219;
+    --serious: #ec835a;
+    --critical: #d03b3b;
+  }
+
+  .card {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+  }
+
+  .status-pill {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 0.85rem; color: var(--ink-dim);
+    padding: 6px 12px; border-radius: 999px;
+    background: var(--glass); border: 1px solid var(--glass-border);
+  }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--ink-faint); }
+  .dot.good { background: var(--good); }
+  .dot.critical { background: var(--critical); }
+
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+  .tile .label { font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); }
+  .tile .value { font-size: 1.7rem; font-weight: 700; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; margin: 2px 0; }
+  .tile .value small { font-size: 0.9rem; font-weight: 500; color: var(--text-secondary); margin-left: 2px; }
+  .tile .sub { font-size: 0.8rem; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+  .badge { display: inline-flex; align-items: center; gap: 5px; font-size: 0.76rem; color: var(--text-secondary); }
+  .badge::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--badge, var(--ink-faint)); }
+
+  .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 12px; }
+  .seg { display: inline-flex; background: var(--glass); border: 1px solid var(--glass-border); border-radius: 999px; padding: 3px; }
+  .seg button {
+    font: inherit; font-size: 0.82rem; color: var(--ink-dim); background: none; border: 0;
+    padding: 5px 12px; border-radius: 999px; cursor: pointer;
+  }
+  .seg button[aria-pressed="true"] { background: rgba(244, 237, 228, 0.12); color: var(--ink); }
+  .toolbar .hint { font-size: 0.8rem; color: var(--ink-faint); margin-left: auto; }
+
+  .charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 12px; }
+  .chart-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
+  .chart-head h3 { margin: 0; font-size: 0.95rem; font-weight: 600; }
+  .chart-head .now { font-size: 0.85rem; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+  .legend { display: flex; gap: 14px; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 4px; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend i { width: 14px; height: 2px; border-radius: 2px; background: var(--c); }
+  .chart-box { position: relative; height: 180px; }
+
+  details.table-view { margin-top: 12px; font-size: 0.85rem; color: var(--ink-dim); }
+  details.table-view summary { cursor: pointer; }
+  table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; margin-top: 8px; }
+  th, td { text-align: right; padding: 5px 8px; border-bottom: 1px solid var(--grid); }
+  th:first-child, td:first-child { text-align: left; }
+  th { color: var(--ink-faint); font-weight: 500; font-size: 0.78rem; }
+
+  .events { list-style: none; margin: 0; padding: 0; }
+  .events li { display: flex; gap: 12px; align-items: baseline; padding: 9px 0; border-bottom: 1px solid var(--grid); font-size: 0.9rem; }
+  .events li:last-child { border-bottom: 0; }
+  .events .when { color: var(--ink-dim); min-width: 150px; font-variant-numeric: tabular-nums; }
+  .events .dur { margin-left: auto; color: var(--ink-dim); font-variant-numeric: tabular-nums; }
+  .empty { color: var(--ink-faint); font-size: 0.9rem; }
+
+  .locked { text-align: center; padding: 40px 20px; color: var(--ink-dim); }
+
+  @media (max-width: 560px) {
+    main { padding: 78px 16px 60px; }
+    .charts { grid-template-columns: 1fr; }
+  }
+
+</style>
+
+<link rel="stylesheet" href="/icons.css">
+<script src="/icons.js" defer></script>
+<script src="/auth-common.js" defer></script>
+<script src="/bg-dim.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js" defer></script>
+<script src="/cockpit.js" defer></script>
+</head>
+<body>
+
+<div id="bg-image-layer"></div>
+<div id="bg-scrim"></div>
+
+<main class="viz-root">
+  <div class="page-head">
+    <h1><span data-ic="chartLine"></span>Server-Cockpit</h1>
+    <p>Live-Werte des Watchlist-Servers. Die Seite aktualisiert sich alle 5 Sekunden.</p>
+  </div>
+
+  <div id="locked" class="card locked" hidden>
+    <p><strong>Kein Zugriff.</strong> Das Cockpit ist nur für Entwickler-Accounts sichtbar.</p>
+    <p><a href="/" style="color:var(--ink)">Zur Startseite</a></p>
+  </div>
+
+  <div id="cockpit" hidden>
+    <span class="status-pill"><span class="dot" id="status-dot"></span><span id="status-text">Verbinde…</span></span>
+
+    <div class="section-label">Jetzt</div>
+    <div class="tiles">
+      <div class="card tile"><div class="label">CPU</div><div class="value" id="t-cpu">–</div><div class="sub" id="t-cpu-sub"></div></div>
+      <div class="card tile"><div class="label">Arbeitsspeicher</div><div class="value" id="t-ram">–</div><div class="sub" id="t-ram-sub"></div></div>
+      <div class="card tile"><div class="label">Temperatur</div><div class="value" id="t-temp">–</div><div class="sub" id="t-temp-sub"></div></div>
+      <div class="card tile"><div class="label">Netzwerk</div><div class="value" id="t-net">–</div><div class="sub" id="t-net-sub"></div></div>
+      <div class="card tile"><div class="label">Festplatte</div><div class="value" id="t-disk">–</div><div class="sub" id="t-disk-sub"></div></div>
+      <div class="card tile"><div class="label">Laufzeit</div><div class="value" id="t-up">–</div><div class="sub" id="t-up-sub"></div></div>
+    </div>
+
+    <div class="section-label">Verlauf</div>
+    <div class="toolbar">
+      <div class="seg" role="group" aria-label="Zeitraum">
+        <button type="button" data-range="300">5 Min</button>
+        <button type="button" data-range="900" aria-pressed="true">15 Min</button>
+        <button type="button" data-range="3600">60 Min</button>
+      </div>
+      <span class="hint" id="range-hint"></span>
+    </div>
+    <div class="charts">
+      <div class="card"><div class="chart-head"><h3>CPU-Auslastung (%)</h3><span class="now" id="n-cpu"></span></div><div class="chart-box"><canvas id="c-cpu"></canvas></div></div>
+      <div class="card"><div class="chart-head"><h3>Arbeitsspeicher (%)</h3><span class="now" id="n-ram"></span></div><div class="chart-box"><canvas id="c-ram"></canvas></div></div>
+      <div class="card"><div class="chart-head"><h3>CPU-Temperatur (°C)</h3><span class="now" id="n-temp"></span></div><div class="chart-box"><canvas id="c-temp"></canvas></div></div>
+      <div class="card">
+        <div class="chart-head"><h3>Netzwerk (kbit/s)</h3><span class="now" id="n-net"></span></div>
+        <div class="legend"><span style="--c:var(--series-1)"><i></i>Empfangen</span><span style="--c:var(--series-2)"><i></i>Gesendet</span></div>
+        <div class="chart-box" style="height:162px"><canvas id="c-net"></canvas></div>
+      </div>
+    </div>
+    <details class="table-view card">
+      <summary>Letzte Messwerte als Tabelle</summary>
+      <table>
+        <thead><tr><th>Zeit</th><th>CPU %</th><th>RAM %</th><th>Temp °C</th><th>↓ kbit/s</th><th>↑ kbit/s</th></tr></thead>
+        <tbody id="table-body"></tbody>
+      </table>
+    </details>
+
+    <div class="section-label">Ausfälle &amp; Neustarts (90 Tage)</div>
+    <div class="tiles" style="margin-bottom:12px">
+      <div class="card tile"><div class="label">Verfügbarkeit 30 Tage</div><div class="value" id="t-avail">–</div><div class="sub" id="t-avail-sub"></div></div>
+      <div class="card tile"><div class="label">Ausfälle 30 Tage</div><div class="value" id="t-outages">–</div><div class="sub" id="t-outages-sub"></div></div>
+    </div>
+    <div class="card">
+      <ul class="events" id="events"><li class="empty">Lade…</li></ul>
+    </div>
+  </div>
+</main>
+
+<footer>
+  watchlist.satho-net.de &middot; <a href="/">Startseite</a> &middot; <a href="/tools.html">Werkzeugkasten</a>
+</footer>
+
+<script>
+  (function applySharedBackground() {
+    try {
+      var wallpaper = localStorage.getItem('sathonet_bg_image');
+      if (wallpaper) document.documentElement.style.setProperty('--wallpaper', 'url("' + wallpaper + '")');
+    } catch (e) {}
+  })();
+</script>
+</body>
+</html>

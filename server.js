@@ -1504,6 +1504,9 @@ app.get('/api/javis', authenticateToken, (req, res) => {
   });
 });
 
+// ============ SERVER-COCKPIT (nur Entwickler) ============
+require('./cockpit')(app, db, authenticateToken);
+
 // ============ ERROR HANDLER ============
 app.use((err, req, res, next) => {
   console.error('💥 Unhandled error:', err);
