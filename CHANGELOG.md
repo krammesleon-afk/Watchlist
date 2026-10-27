@@ -1,5 +1,23 @@
 # Watchlist App - Changelog 🎬
 
+## 27. Oktober 2026 – Watch-Party: alle Videos
+
+### ✨ Neu
+- **Direkte Video-Links** in der Watch-Party: neben YouTube jetzt auch `.mp4`, `.webm` und `.m3u8`-Streams von beliebigen Seiten (HLS über `hls.js`, wo der Browser es nicht selbst kann) – synchron mit Play, Pause, Spulen und Warteschlange
+- **Eigene Datei abspielen**: per Knopf oder per Drag & Drop auf den Player; die Datei wird nicht hochgeladen, jeder im Raum wählt seine eigene Kopie aus, synchronisiert wird nur der Abspielstand
+- Links lassen sich ebenfalls auf den Player ziehen
+- Ist YouTube blockiert (Werbeblocker), funktionieren direkte Videos und Dateien trotzdem
+
+### 🔧 Technik
+- Raumzustand und Warteschlange haben ein neues Feld `kind` (`yt` / `url` / `file`); der Server prüft je nach Art YouTube-ID, `http(s)`-Adresse oder Dateinamen
+- Zweiter Player (`<video>`) neben dem YouTube-Player in `party.js`
+
+### ⚠️ Grenzen
+- Netflix, Disney+, Prime & Co. lassen sich nicht einbinden (Kopierschutz/Einbettungssperre) – es braucht einen direkten Link auf die Videodatei
+- `.mkv` spielt nicht in jedem Browser
+
+---
+
 ## 27. Oktober 2026 – Neue Werkzeuge
 
 ### ✨ Neu

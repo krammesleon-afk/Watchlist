@@ -1,4 +1,5 @@
-// Watch-Party: YouTube-Videos (z. B. Trailer) gemeinsam und synchron schauen.
+// Watch-Party: Videos gemeinsam und synchron schauen – YouTube, direkte
+// Video-Links (mp4, webm, m3u8 …) oder eine Datei, die jeder lokal hat.
 //
 // Der Server hält pro Raum den "wahren" Abspielstand: welches Video, läuft es,
 // an welcher Stelle stand es zu welchem Zeitpunkt. Daraus kann jeder Browser
@@ -9,6 +10,7 @@ const live = require('./live');
 
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // ohne 0/O, 1/I
 const YT_ID = /^[A-Za-z0-9_-]{11}$/;
+const KINDS = ['yt', 'url', 'file'];
 const MAX_ROOMS_PER_USER = 5;
 const EMPTY_ROOM_TTL = 30 * 60 * 1000;
 
@@ -32,6 +34,7 @@ module.exports = function mountParty({ app, authenticateToken }) {
     const s = room.state;
     return {
       videoId: s.videoId,
+      kind: s.kind,
       title: s.title,
       playing: s.playing,
       position: currentPosition(s),
@@ -57,7 +60,16 @@ module.exports = function mountParty({ app, authenticateToken }) {
   }
 
   function loadVideo(room, video, by) {
-    room.state = { videoId: video.videoId, title: video.title || '', playing: true, position: 0, updatedAt: Date.now(), by };
+    room.state = { videoId: video.videoId, kind: video.kind || 'yt', title: video.title || '', playing: true, position: 0, updatedAt: Date.now(), by };
+  }
+
+  // videoId ist je nach Art eine YouTube-ID, eine http(s)-Adresse oder ein Dateiname
+  function validVideo(kind, videoId) {
+    if (!KINDS.includes(kind) || typeof videoId !== 'string') return false;
+    if (kind === 'yt') return YT_ID.test(videoId);
+    if (kind === 'file') return videoId.length > 0 && videoId.length <= 255 && !/[\u0000-\u001f]/.test(videoId);
+    if (videoId.length > 2000) return false;
+    try { return ['http:', 'https:'].includes(new URL(videoId).protocol); } catch { return false; }
   }
 
   function cleanTitle(t) {
@@ -73,7 +85,7 @@ module.exports = function mountParty({ app, authenticateToken }) {
     rooms.set(code, {
       code,
       ownerId: req.user.id,
-      state: { videoId: null, title: '', playing: false, position: 0, updatedAt: Date.now(), by: null },
+      state: { videoId: null, kind: 'yt', title: '', playing: false, position: 0, updatedAt: Date.now(), by: null },
       queue: [],
       chat: [],
       members: new Map(),
@@ -130,21 +142,22 @@ module.exports = function mountParty({ app, authenticateToken }) {
   app.post('/api/party/:code/action', authenticateToken, (req, res) => {
     withRoom(req, res, (room) => {
       const { type, videoId, position, title } = req.body || {};
+      const kind = (req.body || {}).kind || 'yt';
       const s = room.state;
       const by = req.user.username;
       const pos = Math.max(0, Number(position) || 0);
 
       switch (type) {
         case 'load':
-          if (!YT_ID.test(videoId)) return res.status(400).json({ msg: 'Ungültiges Video' });
-          loadVideo(room, { videoId, title: cleanTitle(title) }, by);
+          if (!validVideo(kind, videoId)) return res.status(400).json({ msg: 'Ungültiges Video' });
+          loadVideo(room, { videoId, kind, title: cleanTitle(title) }, by);
           systemMessage(room, `${by} startet ein neues Video`);
           break;
         case 'queue':
-          if (!YT_ID.test(videoId)) return res.status(400).json({ msg: 'Ungültiges Video' });
+          if (!validVideo(kind, videoId)) return res.status(400).json({ msg: 'Ungültiges Video' });
           if (room.queue.length >= 50) return res.status(400).json({ msg: 'Warteschlange ist voll' });
-          if (!s.videoId) loadVideo(room, { videoId, title: cleanTitle(title) }, by);
-          else room.queue.push({ videoId, title: cleanTitle(title), by });
+          if (!s.videoId) loadVideo(room, { videoId, kind, title: cleanTitle(title) }, by);
+          else room.queue.push({ videoId, kind, title: cleanTitle(title), by });
           break;
         case 'unqueue':
           room.queue.splice(Number(req.body.index), 1);
