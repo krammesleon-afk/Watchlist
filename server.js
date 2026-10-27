@@ -160,7 +160,22 @@ db.serialize(() => {
       });
     }
   });
+
+  // Versionszähler, damit gleichzeitige Änderungen sich nicht gegenseitig überschreiben
+  addColumnIfMissing('watchlist', 'version', 'INTEGER NOT NULL DEFAULT 0');
+  addColumnIfMissing('shared_lists', 'version', 'INTEGER NOT NULL DEFAULT 0');
 });
+
+function addColumnIfMissing(table, column, definition) {
+  db.all(`PRAGMA table_info(${table})`, (err, columns) => {
+    if (err) return console.error(`❌ Error checking ${table} structure:`, err);
+    if (columns.some((col) => col.name === column)) return;
+    db.run(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`, (err) => {
+      if (err) console.error(`❌ Error adding ${table}.${column}:`, err);
+      else console.log(`✅ Column ${table}.${column} added`);
+    });
+  });
+}
 
 // ============ AUTH MIDDLEWARE ============
 function authenticateToken(req, res, next) {
@@ -480,34 +495,57 @@ app.post('/api/password-reset/confirm', async (req, res) => {
 // ============ ROUTES: WATCHLIST ============
 
 // Watchlist speichern
+// Speichert die komplette Watchlist. Mit baseVersion wird nur gespeichert, wenn
+// seit dem letzten Laden niemand (z. B. ein anderes Gerät) gespeichert hat –
+// sonst 409 mit dem aktuellen Stand, damit der Client zusammenführen kann.
 app.post('/api/watchlist', authenticateToken, (req, res) => {
   const watchlistData = JSON.stringify(req.body.watchlist || []);
+  const baseVersion = req.body.baseVersion;
 
-  db.get('SELECT * FROM watchlist WHERE user_id = ?', [req.user.id], (err, row) => {
+  db.get('SELECT data, version FROM watchlist WHERE user_id = ?', [req.user.id], (err, row) => {
     if (err) {
       console.error('❌ Error loading watchlist:', err);
       return res.status(500).json({ msg: 'Fehler beim Laden der Watchlist' });
     }
 
-    if (row) {
-      db.run('UPDATE watchlist SET data = ? WHERE user_id = ?', [watchlistData, req.user.id], (err) => {
-        if (err) {
-          console.error('❌ Error updating watchlist:', err);
-          return res.status(500).json({ msg: 'Fehler beim Speichern der Watchlist' });
-        }
-        console.log(`💾 Watchlist updated for user: ${req.user.username}`);
-        res.json({ msg: 'Watchlist gespeichert' });
-      });
-    } else {
-      db.run('INSERT INTO watchlist (user_id, data) VALUES (?, ?)', [req.user.id, watchlistData], (err) => {
+    if (!row) {
+      return db.run('INSERT INTO watchlist (user_id, data, version) VALUES (?, ?, 1)', [req.user.id, watchlistData], (err) => {
         if (err) {
           console.error('❌ Error creating watchlist:', err);
           return res.status(500).json({ msg: 'Fehler beim Erstellen der Watchlist' });
         }
         console.log(`💾 New watchlist created for user: ${req.user.username}`);
-        res.json({ msg: 'Watchlist gespeichert' });
+        res.json({ msg: 'Watchlist gespeichert', version: 1 });
       });
     }
+
+    // Ohne baseVersion (alte Clients) wird wie bisher überschrieben
+    const sql = baseVersion === undefined
+      ? 'UPDATE watchlist SET data = ?, version = version + 1 WHERE user_id = ?'
+      : 'UPDATE watchlist SET data = ?, version = version + 1 WHERE user_id = ? AND version = ?';
+    const params = baseVersion === undefined
+      ? [watchlistData, req.user.id]
+      : [watchlistData, req.user.id, baseVersion];
+
+    db.run(sql, params, function (err) {
+      if (err) {
+        console.error('❌ Error updating watchlist:', err);
+        return res.status(500).json({ msg: 'Fehler beim Speichern der Watchlist' });
+      }
+      if (this.changes === 0) {
+        // Zwischenzeitlich anderswo gespeichert → aktuellen Stand zurückgeben
+        return db.get('SELECT data, version FROM watchlist WHERE user_id = ?', [req.user.id], (err, current) => {
+          if (err || !current) return res.status(500).json({ msg: 'Fehler beim Laden der Watchlist' });
+          let watchlist = [];
+          try { watchlist = JSON.parse(current.data || '[]'); } catch (e) {}
+          res.status(409).json({ msg: 'Watchlist wurde zwischenzeitlich geändert', watchlist, version: current.version });
+        });
+      }
+      console.log(`💾 Watchlist updated for user: ${req.user.username}`);
+      db.get('SELECT version FROM watchlist WHERE user_id = ?', [req.user.id], (err, current) => {
+        res.json({ msg: 'Watchlist gespeichert', version: current ? current.version : null });
+      });
+    });
   });
 });
 
@@ -571,24 +609,25 @@ app.get('/api/ranking', authenticateToken, (req, res) => {
 
 // Watchlist laden
 app.get('/api/watchlist', authenticateToken, (req, res) => {
-  db.get('SELECT data FROM watchlist WHERE user_id = ?', [req.user.id], (err, row) => {
+  db.get('SELECT data, version FROM watchlist WHERE user_id = ?', [req.user.id], (err, row) => {
     if (err) {
       console.error('❌ Error loading watchlist:', err);
       return res.status(500).json({ msg: 'Fehler beim Laden der Watchlist' });
     }
 
+    const version = row ? row.version : 0;
     if (row && row.data) {
       try {
         const watchlist = JSON.parse(row.data);
         console.log(`📖 Watchlist loaded for user: ${req.user.username} (${watchlist.length} items)`);
-        res.json({ watchlist });
+        res.json({ watchlist, version });
       } catch (parseError) {
         console.error('❌ Error parsing watchlist data:', parseError);
-        res.json({ watchlist: [] });
+        res.json({ watchlist: [], version });
       }
     } else {
       console.log(`📖 Empty watchlist for user: ${req.user.username}`);
-      res.json({ watchlist: [] });
+      res.json({ watchlist: [], version });
     }
   });
 });
@@ -872,22 +911,107 @@ app.get('/api/shared-lists/:id', authenticateToken, (req, res) => {
 });
 
 // Listeninhalt aktualisieren (gemeinsame Bearbeitung)
+// Nur noch Umbenennen – Einträge werden über die /items-Routen einzeln geändert,
+// damit gleichzeitige Änderungen mehrerer Mitglieder nicht verloren gehen.
 app.put('/api/shared-lists/:id', authenticateToken, (req, res) => {
   getListIfMember(req.params.id, req.user.id, (err, list, isMember) => {
     if (err) return res.status(500).json({ msg: 'Serverfehler' });
     if (!list) return res.status(404).json({ msg: 'Liste nicht gefunden' });
     if (!isMember) return res.status(403).json({ msg: 'Kein Zugriff' });
-    const data = JSON.stringify(req.body.data || []);
-    const name = (req.body.name || list.name).trim() || list.name;
+    const name = String(req.body.name || list.name).trim().slice(0, 100) || list.name;
     db.run(
-      'UPDATE shared_lists SET data = ?, name = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-      [data, name, list.id],
+      'UPDATE shared_lists SET name = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+      [name, list.id],
       (err) => {
         if (err) return res.status(500).json({ msg: 'Fehler beim Speichern' });
         res.json({ msg: 'Gespeichert' });
       }
     );
   });
+});
+
+// Liest die Einträge einer Liste, wendet mutate(data) an und speichert nur, wenn
+// die Liste dazwischen nicht von jemand anderem geändert wurde (sonst neu versuchen).
+// mutate gibt eine Fehlermeldung (String) zurück oder nichts.
+function updateListItems(listId, mutate, cb, attempt = 0) {
+  db.get('SELECT data, version FROM shared_lists WHERE id = ?', [listId], (err, row) => {
+    if (err || !row) return cb(err || new Error('Liste nicht gefunden'));
+    let data = [];
+    try { data = JSON.parse(row.data || '[]'); } catch (e) {}
+    const problem = mutate(data);
+    if (problem) return cb(null, null, problem);
+    db.run(
+      'UPDATE shared_lists SET data = ?, version = version + 1, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND version = ?',
+      [JSON.stringify(data), listId, row.version],
+      function (err) {
+        if (err) return cb(err);
+        if (this.changes === 0) {
+          if (attempt >= 5) return cb(new Error('Liste wird gerade zu oft geändert'));
+          return updateListItems(listId, mutate, cb, attempt + 1);
+        }
+        cb(null, data);
+      }
+    );
+  });
+}
+
+function requireListMember(req, res, next) {
+  getListIfMember(req.params.id, req.user.id, (err, list, isMember) => {
+    if (err) return res.status(500).json({ msg: 'Serverfehler' });
+    if (!list) return res.status(404).json({ msg: 'Liste nicht gefunden' });
+    if (!isMember) return res.status(403).json({ msg: 'Kein Zugriff' });
+    req.list = list;
+    next();
+  });
+}
+
+function sendListItems(res) {
+  return (err, data, problem) => {
+    if (err) return res.status(500).json({ msg: 'Fehler beim Speichern' });
+    if (problem) return res.status(400).json({ msg: problem });
+    res.json({ data });
+  };
+}
+
+// Eintrag hinzufügen
+app.post('/api/shared-lists/:id/items', authenticateToken, requireListMember, (req, res) => {
+  const it = req.body.item || {};
+  // key hat immer die Form "typ_id" (z. B. movie_603) – landet im Frontend in onclick-Handlern
+  const match = typeof it.key === 'string' && it.key.match(/^(movie|tv|anime|game)_(\d{1,12})$/);
+  if (!match) return res.status(400).json({ msg: 'Ungültiger Eintrag' });
+  const item = {
+    key: it.key,
+    kind: match[1],
+    refId: Number(match[2]),
+    title: String(it.title || '').slice(0, 300),
+    image: /^https:\/\/[^'"\s()]+$/.test(it.image || '') ? it.image.slice(0, 500) : '',
+    meta: String(it.meta || '').slice(0, 300),
+    addedBy: req.user.username,
+  };
+  updateListItems(req.list.id, (data) => {
+    if (data.some((i) => i.key === item.key)) return 'Schon in der Liste';
+    data.push(item);
+  }, sendListItems(res));
+});
+
+// Eintrag entfernen
+app.delete('/api/shared-lists/:id/items/:key', authenticateToken, requireListMember, (req, res) => {
+  const key = req.params.key;
+  updateListItems(req.list.id, (data) => {
+    const idx = data.findIndex((i) => i.key === key);
+    if (idx !== -1) data.splice(idx, 1);
+  }, sendListItems(res));
+});
+
+// Kommentar eines Eintrags setzen
+app.patch('/api/shared-lists/:id/items/:key', authenticateToken, requireListMember, (req, res) => {
+  const key = req.params.key;
+  const comment = String(req.body.comment || '').trim().slice(0, 280);
+  updateListItems(req.list.id, (data) => {
+    const it = data.find((i) => i.key === key);
+    if (!it) return 'Eintrag nicht gefunden';
+    it.comment = comment;
+  }, sendListItems(res));
 });
 
 // Mitglied (Freund) zu einer Liste hinzufügen – nur Besitzer

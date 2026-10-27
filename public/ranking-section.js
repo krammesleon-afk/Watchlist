@@ -33,7 +33,7 @@
     initialized = true;
     try {
       const wlData = await api('/watchlist');
-      watchlist = wlData.watchlist || [];
+      watchlist = sanitizeWatchlist(wlData.watchlist);
       const rkData = await api('/ranking');
       const loaded = rkData.ranking || {};
       ranking = {};
@@ -130,9 +130,9 @@
     const reason = (ranking[item.id] && ranking[item.id].reason) || '';
     return `
       <div class="tier-item" data-id="${item.id}" draggable="true" onclick="RK.openModal(${item.id})">
-        <img src="${posterUrl(item)}" alt="${item.title || item.name}" draggable="false" onerror="this.src='https://via.placeholder.com/70x100?text=Error'">
-        <div class="item-title">${item.title || item.name}</div>
-        ${reason ? `<div class="item-reason">${reason}</div>` : ''}
+        <img src="${escapeHtml(posterUrl(item))}" alt="${escapeHtml(item.title || item.name)}" draggable="false" onerror="this.src='https://via.placeholder.com/70x100?text=Error'">
+        <div class="item-title">${escapeHtml(item.title || item.name)}</div>
+        ${reason ? `<div class="item-reason">${escapeHtml(reason)}</div>` : ''}
       </div>
     `;
   }
@@ -277,7 +277,7 @@
     $('rk-share-preview').innerHTML = TIERS.map(tier => {
       const items = watchlist.filter(i => ranking[i.id] && ranking[i.id].tier === tier);
       if (items.length === 0) return '';
-      return `<div class="share-preview-tier"><div class="tier-badge" style="background:${TIER_COLORS[tier]}">${tier}</div><div class="tier-items-list">${items.map(i => i.title || i.name).join(', ')}</div></div>`;
+      return `<div class="share-preview-tier"><div class="tier-badge" style="background:${TIER_COLORS[tier]}">${tier}</div><div class="tier-items-list">${escapeHtml(items.map(i => i.title || i.name).join(', '))}</div></div>`;
     }).filter(Boolean).join('') || '<p style="text-align:center;color:var(--text-muted)">Noch nichts gerankt</p>';
     $('rk-share-modal').classList.add('active');
   }

@@ -7,6 +7,23 @@
 - Neuer Proxy-Endpunkt für Streaming-Anbieter: `/api/tmdb/:type/:id/watch/providers`
 - `.env` kann verschlüsselt als `.env.gpg` ins Repo (`npm run env:encrypt` / `env:decrypt`)
 
+### 🤝 Gleichzeitiges Bearbeiten
+- **Watchlist** speichert mit Versionsnummer; bei Konflikten (Handy + PC) werden beide Stände zusammengeführt statt überschrieben
+- **Geteilte Listen**: Einträge werden einzeln hinzugefügt/entfernt/kommentiert – kein Datenverlust mehr, wenn zwei Freunde gleichzeitig etwas ändern
+- `PUT /api/shared-lists/:id` ändert nur noch den Namen
+
+### 🛡️ XSS-Schutz
+- `escapeHtml()` in `index.js`; Titel, Notizen, Genres, Anbieter usw. werden escaped
+- Importierte und geladene Watchlist-Einträge werden geprüft (`sanitizeWatchlistItem`)
+- Ranking und Freunde-Seite: Titel, Begründungen und Bild-URLs abgesichert
+- Server lässt bei geteilten Listen nur gültige Keys (`movie_123`) und https-Bilder zu
+
+### 🐛 Bugfixes
+- Notiz-Dialog: „Speichern“-Button funktionierte wegen falscher Anführungszeichen nicht
+
+### 💾 Backup
+- `scripts/backup.js` + wöchentlicher Cronjob (Sonntag 03:30), behält 8 Sicherungen
+
 ### 🔧 Technik
 - Git-Repo eingerichtet, `.gitignore` für `.env`, Datenbank und `node_modules`
 - `sqlite3` auf Version 5 festgelegt (Version 6 läuft nicht mit Node 18)

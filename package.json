@@ -7,7 +7,8 @@
   "scripts": {
     "start": "node server.js",
     "env:encrypt": "./scripts/env-verschluesseln.sh",
-    "env:decrypt": "./scripts/env-entschluesseln.sh"
+    "env:decrypt": "./scripts/env-entschluesseln.sh",
+    "backup": "node scripts/backup.js"
   },
   "engines": {
     "node": ">=18"

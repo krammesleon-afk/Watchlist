@@ -47,7 +47,13 @@
   }
 
   function initials(name) {
-    return (name || '?').trim().slice(0, 2).toUpperCase();
+    return escapeHtml((name || '?').trim().slice(0, 2).toUpperCase());
+  }
+
+  // Bild-URL nur übernehmen, wenn sie eine normale http(s)-Adresse ist –
+  // sie landet in style="url('...')" bzw. src="..." und könnte sonst HTML/CSS einschleusen
+  function safeImg(url, fallback) {
+    return /^https?:\/\/[^\s'"()\\<>]+$/.test(url || '') ? url : fallback;
   }
 
   // === INIT ===
@@ -131,8 +137,8 @@
   }
 
   function posterUrl(path) {
-    if (!path) return PLACEHOLDER_P;
-    return path.startsWith('http') ? path : TMDB_IMG + path;
+    if (!path || typeof path !== 'string') return PLACEHOLDER_P;
+    return safeImg(path.startsWith('http') ? path : TMDB_IMG + path, PLACEHOLDER_P);
   }
 
   function statCard(num, label) {
@@ -157,7 +163,7 @@
   function gameCard(g) {
     return `
       <div class="item-card game">
-        <div class="ic-cover" style="background-image:url('${g.background_image || PLACEHOLDER_G}')"></div>
+        <div class="ic-cover" style="background-image:url('${safeImg(g.background_image, PLACEHOLDER_G)}')"></div>
         <div class="ic-body">
           <strong>${escapeHtml(g.name || 'Unbekannt')}</strong>
           <span class="ic-meta">${escapeHtml(g.genres_text || '')}</span>
@@ -403,6 +409,8 @@
   }
 
   function itemCard(it) {
+    // key wird in onclick eingesetzt – nur das bekannte Format "typ_id" zulassen
+    if (!/^(movie|tv|anime|game)_\d+$/.test(it.key)) return '';
     const isGame = it.kind === 'game';
     const ph = isGame ? PLACEHOLDER_G : PLACEHOLDER_P;
     const hasComment = it.comment && it.comment.trim();
@@ -411,7 +419,7 @@
       : '';
     return `
       <div class="item-card ${isGame ? 'game' : ''}">
-        <div class="ic-cover" style="background-image:url('${it.image || ph}')">${badge}</div>
+        <div class="ic-cover" style="background-image:url('${safeImg(it.image, ph)}')">${badge}</div>
         <div class="ic-body">
           <strong>${escapeHtml(it.title)}</strong>
           <span class="ic-meta">${escapeHtml(it.meta || '')}</span>
@@ -457,10 +465,11 @@
     if (!it) return;
     const val = prompt('Kommentar zu "' + it.title + '"\n(leer lassen zum Entfernen):', it.comment || '');
     if (val === null) return;
-    it.comment = val.trim().slice(0, 280);
-    saveListData();
+    const comment = val.trim().slice(0, 280);
+    it.comment = comment;
     renderItems();
-    notify(it.comment ? '✓ Kommentar gespeichert' : 'Kommentar entfernt');
+    changeItems('PATCH', '/items/' + encodeURIComponent(key), { comment })
+      .then((ok) => ok && notify(comment ? '✓ Kommentar gespeichert' : 'Kommentar entfernt'));
   }
 
   async function addMember() {
@@ -505,15 +514,29 @@
     }
   }
 
-  // === Listeninhalt speichern (gemeinsame Bearbeitung) ===
-  async function saveListData() {
+  // === Einträge einzeln ändern (gemeinsame Bearbeitung) ===
+  // Der Server ändert nur den einen Eintrag und liefert die aktuelle Liste zurück –
+  // so gehen Änderungen anderer Mitglieder nicht verloren.
+  async function changeItems(method, path, body) {
+    const listId = currentList.id;
     try {
-      await api('/shared-lists/' + currentList.id, {
-        method: 'PUT',
-        body: { data: currentList.data, name: currentList.name },
-      });
+      const res = await api('/shared-lists/' + listId + path, { method, body });
+      if (currentList && currentList.id === listId) {
+        currentList.data = res.data || [];
+        renderItems();
+      }
+      return true;
     } catch (e) {
-      notify('⚠️ Speichern fehlgeschlagen: ' + e.message);
+      notify('⚠️ ' + e.message);
+      // Lokalen Stand verwerfen und vom Server neu laden
+      try {
+        const fresh = await api('/shared-lists/' + listId);
+        if (currentList && currentList.id === listId) {
+          currentList.data = fresh.data || [];
+          renderItems();
+        }
+      } catch (_) {}
+      return false;
     }
   }
 
@@ -570,7 +593,7 @@
       const inList = existing.has(it.key);
       return `
         <div class="search-result">
-          <img src="${it.image || (it.kind === 'game' ? PLACEHOLDER_G : PLACEHOLDER_P)}" alt=""
+          <img src="${safeImg(it.image, it.kind === 'game' ? PLACEHOLDER_G : PLACEHOLDER_P)}" alt=""
                onerror="this.src='${it.kind === 'game' ? PLACEHOLDER_G : PLACEHOLDER_P}'">
           <div class="sr-info">
             <strong>${escapeHtml(it.title)}</strong>
@@ -592,9 +615,9 @@
       return false;
     }
     currentList.data.push(Object.assign({}, it, { addedBy: me.username || 'Ich' }));
-    saveListData();
     renderItems();
-    notify(`✓ "${it.title}" hinzugefügt`);
+    changeItems('POST', '/items', { item: it })
+      .then((ok) => ok && notify(`✓ "${it.title}" hinzugefügt`));
     return true;
   }
 
@@ -607,8 +630,8 @@
 
   function removeItem(key) {
     currentList.data = (currentList.data || []).filter((i) => i.key !== key);
-    saveListData();
     renderItems();
+    changeItems('DELETE', '/items/' + encodeURIComponent(key));
     if (searchItems._cache) renderSearchResults(Object.values(searchItems._cache));
     if (minePickerOpen) renderMine();
   }
@@ -678,7 +701,7 @@
       const ph = it.kind === 'game' ? PLACEHOLDER_G : PLACEHOLDER_P;
       return `
         <div class="search-result">
-          <img src="${it.image || ph}" alt="" onerror="this.src='${ph}'">
+          <img src="${safeImg(it.image, ph)}" alt="" onerror="this.src='${ph}'">
           <div class="sr-info">
             <strong>${escapeHtml(it.title)}</strong>
             <span>${escapeHtml(it.meta)}</span>

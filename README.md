@@ -31,7 +31,7 @@ Alle Anfragen an TMDB, RAWG und AniList laufen über den Server. Die API-Keys bl
 ```
 server.js             Express-Server mit allen API-Routen
 public/               Frontend (wird statisch ausgeliefert)
-scripts/              Skripte zum Ver- und Entschlüsseln der .env
+scripts/              .env ver-/entschlüsseln, Datenbank-Backup
 .env.example          Vorlage für die Umgebungsvariablen
 .env.gpg              Verschlüsselte .env (nur mit Passwort lesbar)
 CHANGELOG.md          Änderungsverlauf
@@ -120,6 +120,25 @@ journalctl -u watchlist.service -f         # Logs ansehen
 ```
 
 **Passwort-Reset:** Es wird keine E-Mail verschickt. Der Reset-Code erscheint im Server-Log (`journalctl`) und muss dem Nutzer manuell weitergegeben werden.
+
+## Backup
+
+`scripts/backup.js` erstellt eine konsistente Kopie der Datenbank (auch während der Server läuft) nach `~/backups/watchlist/` und behält die letzten 8 Sicherungen.
+
+```bash
+npm run backup
+```
+
+Auf dem Server läuft es automatisch jeden **Sonntag um 03:30** per Cronjob (`crontab -l`). Das Log steht in `~/backups/watchlist/backup.log`.
+
+Wiederherstellen: Dienst stoppen, Sicherung als `watchlist.db` zurückkopieren (und vorhandene `watchlist.db-wal`/`-shm` löschen), Dienst starten.
+
+> Die Backups liegen auf demselben Server. Gegen einen Plattenausfall hilft nur, sie ab und zu woanders hin zu kopieren.
+
+## Gleichzeitiges Bearbeiten
+
+- **Watchlist:** Jede Speicherung trägt eine Versionsnummer. Hat ein anderes Gerät inzwischen gespeichert, antwortet der Server mit `409`, und der Browser führt beide Stände zusammen (Einträge und einzelne Felder, z. B. gesehene Episoden).
+- **Geteilte Listen:** Einträge werden einzeln hinzugefügt, entfernt und kommentiert (`POST/DELETE/PATCH /api/shared-lists/:id/items`). Änderungen mehrerer Mitglieder überschreiben sich nicht.
 
 ## Hinweis zu sqlite3
 

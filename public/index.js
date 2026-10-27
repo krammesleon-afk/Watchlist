@@ -65,6 +65,10 @@ const elems = {
 // ============ STATE ============
 let token = null;
 let watchlist = [];
+// Stand der Watchlist beim letzten Laden/Speichern – Grundlage zum Zusammenführen,
+// falls ein anderes Gerät zwischendurch gespeichert hat
+let watchlistBase = [];
+let watchlistVersion = 0;
 let lastSearchResults = { results: [], tmdbType: "multi" };
 const WATCHLIST_PREVIEW_COUNT = 8;
 let watchlistShowAll = false;
@@ -170,12 +174,7 @@ async function attemptAutoLogin() {
       elems.mainContent.style.display = 'block';
       
       const data = await res.json();
-      watchlist = data.watchlist || [];
-      
-      watchlist.forEach(item => {
-        if(!item.addedAt) item.addedAt = new Date().toISOString();
-        if(item.seen && !item.seenAt) item.seenAt = new Date().toISOString();
-      });
+      setWatchlistFromServer(data);
 
       await loadRankingForSort();
 
@@ -266,6 +265,8 @@ function logout() {
   clearTokenFromCache();
   token = null;
   watchlist = [];
+  watchlistBase = [];
+  watchlistVersion = 0;
   elems.authSection.style.display = 'block';
   elems.nav.style.display = 'none';
   elems.mainContent.style.display = 'none';
@@ -306,12 +307,7 @@ elems.deleteAccountBtn?.addEventListener('click', deleteAccount);
 async function loadWatchlistFromServer() {
   try {
     const data = await apiFetch('/api/watchlist');
-    watchlist = data.watchlist || [];
-
-    watchlist.forEach(item => {
-      if(!item.addedAt) item.addedAt = new Date().toISOString();
-      if(item.seen && !item.seenAt) item.seenAt = new Date().toISOString();
-    });
+    setWatchlistFromServer(data);
 
     renderWatchlist();
   } catch(e) {
@@ -322,9 +318,118 @@ async function loadWatchlistFromServer() {
   }
 }
 
-async function saveWatchlistToServer() {
+// Text sicher ins HTML einsetzen (verhindert eingeschleusten Code, z. B. über Import)
+function escapeHtml(str) {
+  return String(str == null ? '' : str).replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[c]));
+}
+
+// Felder, die in onclick-Handlern oder Berechnungen landen, auf gültige Werte prüfen.
+// Gibt null zurück, wenn der Eintrag unbrauchbar ist.
+const WATCHLIST_TYPES = ['movie', 'tv', 'anime'];
+function sanitizeWatchlistItem(item) {
+  if(!isPlainObject(item)) return null;
+  const id = Number(item.id);
+  if(!Number.isInteger(id)) return null;
+  item.id = id;
+  for(const f of ['media_type', 'type']) {
+    if(f in item && !WATCHLIST_TYPES.includes(item[f])) delete item[f];
+  }
+  if('vote_average' in item) item.vote_average = Math.min(10, Math.max(0, Number(item.vote_average) || 0));
+  if('user_rating' in item) {
+    const r = Math.round(Number(item.user_rating));
+    if(r >= 1 && r <= 10) item.user_rating = r; else delete item.user_rating;
+  }
+  if('poster_path' in item && typeof item.poster_path !== 'string') item.poster_path = '';
+  return item;
+}
+
+function sanitizeWatchlist(list) {
+  return (Array.isArray(list) ? list : []).map(sanitizeWatchlistItem).filter(Boolean);
+}
+
+function setWatchlistFromServer(data) {
+  watchlist = sanitizeWatchlist(data.watchlist);
+  watchlistVersion = data.version || 0;
+  watchlist.forEach(item => {
+    if(!item.addedAt) item.addedAt = new Date().toISOString();
+    if(item.seen && !item.seenAt) item.seenAt = new Date().toISOString();
+  });
+  watchlistBase = structuredClone(watchlist);
+}
+
+function watchlistKey(item) { return (item.media_type || item.type) + ':' + item.id; }
+function isPlainObject(v) { return v !== null && typeof v === 'object' && !Array.isArray(v); }
+function sameValue(a, b) { return JSON.stringify(a) === JSON.stringify(b); }
+
+// Drei-Wege-Merge: übernimmt die eigenen Änderungen (local gegenüber base)
+// auf den Stand eines anderen Geräts (remote). Objekte wie "episodes" werden
+// Feld für Feld zusammengeführt.
+function mergeValue(base, local, remote) {
+  if(sameValue(local, base)) return remote;
+  if(sameValue(remote, base)) return local;
+  if(isPlainObject(local) && isPlainObject(remote)) {
+    const b = isPlainObject(base) ? base : {};
+    const out = {};
+    for(const k of new Set([...Object.keys(b), ...Object.keys(local), ...Object.keys(remote)])) {
+      const v = mergeValue(b[k], local[k], remote[k]);
+      if(v !== undefined) out[k] = v;
+    }
+    return out;
+  }
+  return local;
+}
+
+function mergeWatchlists(base, local, remote) {
+  const baseMap = new Map(base.map(i => [watchlistKey(i), i]));
+  const localMap = new Map(local.map(i => [watchlistKey(i), i]));
+  const result = [];
+  for(const r of remote) {
+    const k = watchlistKey(r);
+    if(baseMap.has(k) && !localMap.has(k)) continue; // hier gelöscht
+    result.push(localMap.has(k) ? mergeValue(baseMap.get(k), localMap.get(k), r) : r);
+  }
+  const resultKeys = new Set(result.map(watchlistKey));
+  for(const l of local) {
+    const k = watchlistKey(l);
+    if(!baseMap.has(k) && !resultKeys.has(k)) result.push(l); // hier hinzugefügt
+  }
+  return result;
+}
+
+// Speichervorgänge nacheinander ausführen, damit jeder auf der neuesten Version aufbaut
+let watchlistSaveChain = Promise.resolve();
+
+function saveWatchlistToServer() {
+  watchlistSaveChain = watchlistSaveChain.then(doSaveWatchlist);
+  return watchlistSaveChain;
+}
+
+async function doSaveWatchlist() {
   try {
-    await apiFetch('/api/watchlist', { method: 'POST', body: { watchlist } });
+    for(let attempt = 0; ; attempt++) {
+      const sent = structuredClone(watchlist);
+      const res = await fetch('/api/watchlist', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ watchlist: sent, baseVersion: watchlistVersion })
+      });
+      const data = await res.json().catch(() => ({}));
+      if(res.status === 409 && attempt < 3) {
+        // Ein anderes Gerät hat gespeichert: eigene Änderungen darauf übertragen
+        const merged = mergeWatchlists(watchlistBase, watchlist, data.watchlist || []);
+        watchlist = merged;
+        watchlistBase = structuredClone(data.watchlist || []);
+        watchlistVersion = data.version || 0;
+        renderWatchlist();
+        continue;
+      }
+      if(!res.ok) throw new Error(data.msg || 'API Fehler');
+      watchlistVersion = data.version;
+      watchlistBase = sent;
+      break;
+    }
     showSnackbar("Watchlist gespeichert");
 
     if(document.getElementById('statistics')?.classList.contains('active')) {
@@ -556,7 +661,7 @@ async function loadWatchProviders(type, id, container) {
       const seen = new Set();
       const chips = list
         .filter((p) => p.logo_path && !seen.has(p.provider_id) && seen.add(p.provider_id))
-        .map((p) => `<span class="ip-chip" title="${p.provider_name}"><img src="${IMG}${p.logo_path}" alt="${p.provider_name}" loading="lazy"><span>${p.provider_name}</span></span>`)
+        .map((p) => `<span class="ip-chip" title="${escapeHtml(p.provider_name)}"><img src="${IMG}${escapeHtml(p.logo_path)}" alt="${escapeHtml(p.provider_name)}" loading="lazy"><span>${escapeHtml(p.provider_name)}</span></span>`)
         .join('');
       return chips ? `<div class="ip-group"><span class="ip-label">${label}</span><div class="ip-chips">${chips}</div></div>` : '';
     };
@@ -1409,8 +1514,8 @@ async function renderReleases() {
       const dateStr = release.releaseDate.toLocaleDateString('de-DE');
 
       details.innerHTML = `
-        <strong>🎬 Neue Folge:</strong> S${release.episode.season_number}E${release.episode.episode_number}<br>
-        <strong>📺 Titel:</strong> ${release.episode.name || 'Unbekannt'}<br>
+        <strong>🎬 Neue Folge:</strong> S${escapeHtml(release.episode.season_number)}E${escapeHtml(release.episode.episode_number)}<br>
+        <strong>📺 Titel:</strong> ${escapeHtml(release.episode.name || 'Unbekannt')}<br>
         <strong>📅 Datum:</strong> ${dateStr}
       `;
 
@@ -1599,7 +1704,7 @@ function importWatchlist() {
     try {
       const data = JSON.parse(e.target.result);
       if(Array.isArray(data)) {
-        watchlist = data;
+        watchlist = sanitizeWatchlist(data);
         watchlist.forEach(item => {
           if(!item.addedAt) item.addedAt = new Date().toISOString();
           if(item.seen && !item.seenAt) item.seenAt = new Date().toISOString();
@@ -1707,7 +1812,7 @@ function openRatingModal(id, media_type) {
     
     const currentRating = item.user_rating || 0;
     let html = '<div class="rating-modal" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--card-bg);padding:20px;border-radius:12px;z-index:10000;min-width:280px;box-shadow:0 10px 40px rgba(0,0,0,0.5);">';
-    html += `<h3 style="margin:0 0 15px 0;">Bewerte: ${item.title || item.name}</h3>`;
+    html += `<h3 style="margin:0 0 15px 0;">Bewerte: ${escapeHtml(item.title || item.name)}</h3>`;
     html += '<div class="rating-stars" style="display:flex;gap:5px;justify-content:center;margin:20px 0;">';
     for(let i=1; i<=10; i++) {
         const filled = i <= currentRating ? 'color:#fbbf24;' : 'color:#4b5563;';
@@ -1738,10 +1843,10 @@ function openNotesModal(id, media_type) {
     
     const currentNote = item.notes || '';
     let html = '<div style="background:var(--card-bg);padding:20px;border-radius:12px;min-width:320px;max-width:90%;">';
-    html += `<h3 style="margin:0 0 15px 0;">Notiz: ${item.title || item.name}</h3>`;
-    html += `<textarea id="note-input" style="width:100%;height:120px;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:8px;padding:10px;color:var(--text-primary);resize:vertical;" placeholder="Deine Notiz...">${currentNote}</textarea>`;
+    html += `<h3 style="margin:0 0 15px 0;">Notiz: ${escapeHtml(item.title || item.name)}</h3>`;
+    html += `<textarea id="note-input" style="width:100%;height:120px;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:8px;padding:10px;color:var(--text-primary);resize:vertical;" placeholder="Deine Notiz...">${escapeHtml(currentNote)}</textarea>`;
     html += '<div style="display:flex;gap:10px;margin-top:15px;">';
-    html += '<button onclick="saveNoteAndClose('+id+',"'+media_type+'")" style="flex:1;padding:10px;border:none;background:var(--accent-primary);color:white;border-radius:6px;cursor:pointer;">Speichern</button>';
+    html += '<button onclick="saveNoteAndClose('+id+',\''+media_type+'\')" style="flex:1;padding:10px;border:none;background:var(--accent-primary);color:white;border-radius:6px;cursor:pointer;">Speichern</button>';
     html += '<button onclick="closeRatingModal()" style="flex:1;padding:10px;border:none;background:var(--bg-tertiary);color:var(--text-primary);border-radius:6px;cursor:pointer;">Abbrechen</button>';
     html += '</div></div>';
     
@@ -1863,10 +1968,10 @@ function pickRandomFromWatchlist() {
     
     let html = '<div style="text-align:center;min-width:300px;">';
     html += '<h2 style="margin-bottom:20px;">🎬 Was du schauen solltest:</h2>';
-    html += `<img src="${posterUrl}" style="width:150px;border-radius:12px;margin-bottom:15px;" onerror="this.src='https://via.placeholder.com/150x225?text=No+Image'">`;
-    html += `<h3 style="margin:10px 0;">${random.title || random.name}</h3>`;
-    html += `<p style="color:var(--text-secondary);">${formatType(random.media_type || random.type)} • ${showStars(random.vote_average)}</p>`;
-    if(random.notes) html += `<p style="color:var(--accent-primary);font-style:italic;margin-top:10px;">"${random.notes}"</p>`;
+    html += `<img src="${escapeHtml(posterUrl)}" style="width:150px;border-radius:12px;margin-bottom:15px;" onerror="this.src='https://via.placeholder.com/150x225?text=No+Image'">`;
+    html += `<h3 style="margin:10px 0;">${escapeHtml(random.title || random.name)}</h3>`;
+    html += `<p style="color:var(--text-secondary);">${escapeHtml(formatType(random.media_type || random.type))} • ${showStars(random.vote_average)}</p>`;
+    if(random.notes) html += `<p style="color:var(--accent-primary);font-style:italic;margin-top:10px;">"${escapeHtml(random.notes)}"</p>`;
     html += '<div style="margin-top:20px;display:flex;gap:10px;justify-content:center;">';
     html += `<button onclick="closeRatingModal();showInfoOverlay(watchlist.find(i=>i.id===${random.id}))" style="padding:10px 20px;border:none;background:var(--accent-primary);color:white;border-radius:6px;cursor:pointer;">ℹ️ Details</button>`;
     html += '<button onclick="pickRandomFromWatchlist()" style="padding:10px 20px;border:none;background:var(--bg-tertiary);color:var(--text-primary);border-radius:6px;cursor:pointer;">🎲 Nochmal</button>';
@@ -2040,7 +2145,7 @@ function findDuplicates() {
     
     duplicates.forEach(d => {
         html += `<div style="background:var(--bg-secondary);padding:12px;border-radius:8px;margin-bottom:10px;">`;
-        html += `<p style="margin:0 0 10px 0;font-weight:bold;">${d.original.title || d.original.name}</p>`;
+        html += `<p style="margin:0 0 10px 0;font-weight:bold;">${escapeHtml(d.original.title || d.original.name)}</p>`;
         html += `<button onclick="removeFromWatchlist(${d.duplicate.id},'${d.duplicate.media_type || d.duplicate.type}');closeRatingModal();findDuplicates();" style="padding:8px 12px;border:none;background:var(--accent-danger);color:white;border-radius:6px;cursor:pointer;">🗑️ Duplikat entfernen</button>`;
         html += '</div>';
     });
@@ -2174,23 +2279,23 @@ function renderAsGridExtended(container, entries, options = {}) {
         
         // Poster mit Status-Badges (Bewertung auf dem Poster statt als Text)
         cardHtml += `<div class="card-poster">`;
-        cardHtml += `<img src="${posterUrl}" alt="${item.title || item.name}" onerror="this.src='https://via.placeholder.com/100?text=No+Image'">`;
+        cardHtml += `<img src="${escapeHtml(posterUrl)}" alt="${escapeHtml(item.title || item.name)}" onerror="this.src='https://via.placeholder.com/100?text=No+Image'">`;
         if(item.user_rating) {
-            cardHtml += `<span class="poster-rating" title="Deine Bewertung">${item.user_rating}<small>/10</small></span>`;
+            cardHtml += `<span class="poster-rating" title="Deine Bewertung">${escapeHtml(item.user_rating)}<small>/10</small></span>`;
         }
         if(isSeen) {
             cardHtml += `<span class="poster-seen" title="Schon gesehen">✓</span>`;
         }
         cardHtml += `</div>`;
         cardHtml += `<div class="info">`;
-        cardHtml += `<h3>${item.title || item.name || "Unbekannt"}</h3>`;
-        cardHtml += `<p class="small">Typ: ${formatType(item.media_type || item.type)}</p>`;
+        cardHtml += `<h3>${escapeHtml(item.title || item.name || "Unbekannt")}</h3>`;
+        cardHtml += `<p class="small">Typ: ${escapeHtml(formatType(item.media_type || item.type))}</p>`;
         cardHtml += `<div class="stars">${showStars(item.vote_average)}</div>`;
-        cardHtml += `<div class="small">${item.genres_text || guessGenres(item)}</div>`;
+        cardHtml += `<div class="small">${escapeHtml(item.genres_text || guessGenres(item))}</div>`;
         
         // Notiz anzeigen
         if(item.notes) {
-            cardHtml += `<p class="small" style="color:var(--text-secondary);font-style:italic;margin-top:5px;">📝 ${item.notes.substring(0,50)}${item.notes.length > 50 ? '...' : ''}</p>`;
+            cardHtml += `<p class="small" style="color:var(--text-secondary);font-style:italic;margin-top:5px;">📝 ${escapeHtml(String(item.notes).substring(0,50))}${item.notes.length > 50 ? '...' : ''}</p>`;
         }
         
         // Favorit bleibt direkt auf der Karte (Schnellzugriff)
@@ -2270,7 +2375,7 @@ function openCardMenu(item, anchorEl, options = {}) {
     }
 
     menu.innerHTML =
-        `<div class="cam-title">${item.title || item.name || 'Titel'}</div>` +
+        `<div class="cam-title">${escapeHtml(item.title || item.name || 'Titel')}</div>` +
         rows.join('') +
         `<div class="cam-label">Streaming suchen</div>` +
         generateExternalSearchLinks(item.title || item.name);
