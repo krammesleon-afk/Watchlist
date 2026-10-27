@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Benachrichtigungen – Satho-Net</title>
+<link rel="icon" href="data:,">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Satho-Net">
+<meta name="theme-color" content="#131110">
+<link rel="stylesheet" href="/satho-page.css">
+<link rel="stylesheet" href="/icons.css">
+<style>
+  main { max-width: 820px; }
+  .status { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .status-ico { font-size: 2rem; }
+  .status-text { flex: 1; min-width: 200px; }
+  .status-text strong { display: block; }
+  .ios-hint { border-color: rgba(246, 162, 76, 0.5); }
+  .ios-hint ol { margin: 6px 0 0; padding-left: 20px; font-size: 0.88rem; color: var(--ink-dim); }
+  .devices { list-style: none; margin: 0; padding: 0; }
+  .devices li { display: flex; align-items: center; gap: 10px; padding: 8px 0; font-size: 0.9rem; }
+  .devices li + li { border-top: 1px solid rgba(244, 237, 228, 0.08); }
+  .devices .this { font-size: 0.72rem; color: var(--ok); margin-left: 6px; }
+  .hook-url { display: flex; gap: 8px; }
+  .hook-url input { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.78rem; }
+</style>
+<script src="/icons.js" defer></script>
+<script src="/auth-common.js" defer></script>
+<script src="/bg-dim.js"></script>
+</head>
+<body>
+
+<div id="bg-image-layer"></div>
+<div id="bg-scrim"></div>
+
+<main>
+  <div class="page-head">
+    <h1><span data-ic="info"></span>Benachrichtigungen</h1>
+    <p>Lass dir von deinem Server Bescheid geben – aufs Handy oder den PC, auch wenn die Seite geschlossen ist.
+       Ganz ohne App und ohne Entwicklerkonto.</p>
+  </div>
+
+  <div class="panel ios-hint hidden" id="ios-hint">
+    <h2>📱 iPhone/iPad: ein Schritt vorher</h2>
+    <p class="muted" style="margin:0">Apple erlaubt Benachrichtigungen nur für Webseiten, die auf dem Home-Bildschirm liegen (ab iOS 16.4):</p>
+    <ol>
+      <li>Unten in Safari auf <strong>Teilen</strong> (Quadrat mit Pfeil) tippen</li>
+      <li><strong>„Zum Home-Bildschirm“</strong> wählen</li>
+      <li>Satho-Net vom Home-Bildschirm aus öffnen und hierher zurückkommen</li>
+    </ol>
+  </div>
+
+  <div class="panel status">
+    <span class="status-ico" id="status-ico">🔕</span>
+    <div class="status-text">
+      <strong id="status-title">Prüfe …</strong>
+      <span class="muted" id="status-sub"></span>
+    </div>
+    <button class="btn" id="toggle-btn" disabled>Aktivieren</button>
+    <button class="btn ghost" id="test-btn" disabled>Test senden</button>
+  </div>
+
+  <div class="section-label">Worüber informieren?</div>
+  <div class="panel">
+    <label class="switch"><input type="checkbox" id="set-login"> <span>🔐 Jemand hat sich mit meinem Konto angemeldet</span></label>
+    <label class="switch"><input type="checkbox" id="set-friends"> <span>👥 Neue Freundschaftsanfrage</span></label>
+    <p class="faint" style="margin:6px 0 0">Gilt für alle deine Geräte, auf denen Benachrichtigungen aktiv sind.</p>
+  </div>
+
+  <div class="section-label">Deine Geräte</div>
+  <div class="panel">
+    <ul class="devices" id="devices"></ul>
+    <p class="faint" id="devices-empty" style="margin:0">Noch auf keinem Gerät aktiviert.</p>
+  </div>
+
+  <div class="section-label">Eigene Skripte &amp; Server</div>
+  <div class="panel">
+    <p class="muted" style="margin-top:0">Mit dieser geheimen Adresse kann jedes Skript dir eine Nachricht schicken –
+      zum Beispiel wenn das Backup fertig ist oder die Festplatte voll läuft.</p>
+    <div class="hook-url">
+      <input type="text" id="hook-url" class="grow" readonly>
+      <button class="btn ghost" id="hook-copy">Kopieren</button>
+      <button class="btn ghost danger" id="hook-new" title="Neue Adresse erzeugen – die alte funktioniert dann nicht mehr">Neu</button>
+    </div>
+    <p class="faint" style="margin:14px 0 0">Einfach:</p>
+    <pre class="code" id="ex-simple"></pre>
+    <p class="faint" style="margin:8px 0 0">Mit Titel und Link:</p>
+    <pre class="code" id="ex-json"></pre>
+    <p class="faint" style="margin:8px 0 0">Beispiel: Nachricht nach dem wöchentlichen Backup (in der crontab):</p>
+    <pre class="code" id="ex-backup"></pre>
+    <p class="faint" style="margin:8px 0 0">Behandle die Adresse wie ein Passwort. Wenn sie in falsche Hände gerät: „Neu“ klicken.</p>
+  </div>
+</main>
+
+<footer>
+  watchlist.satho-net.de &middot; <a href="/">Startseite</a>
+</footer>
+
+<script src="/satho-page.js"></script>
+<script src="/push.js" defer></script>
+</body>
+</html>

@@ -1,5 +1,20 @@
 # Watchlist App - Changelog 🎬
 
+## 27. Oktober 2026 – Neue Werkzeuge
+
+### ✨ Neu
+- **Datei-Drop** (`/drop.html`): Dateien und Text per WebRTC direkt zwischen eigenen Geräten (ohne Nachfrage) und zu Freunden (mit Nachfrage) schicken
+- **Watch-Party** (`/party.html`): Räume mit Code/Einladungslink, synchroner YouTube-Player, Trailer-Suche über TMDB, Warteschlange, Chat
+- **Geheimlink** (`/secret.html`): AES-256-GCM-Verschlüsselung im Browser, Schlüssel nur im `#`-Teil des Links, Abruf löscht den Eintrag
+- **Benachrichtigungen** (`/push.html`): Web-Push ohne Entwicklerkonto – bei Logins und Freundschaftsanfragen, Test-Button, Geräteverwaltung, Webhook für eigene Skripte
+- Startseite verlinkt die vier neuen Werkzeuge; App-Icons und Web-Manifest (für „Zum Home-Bildschirm“ auf dem iPhone)
+
+### 🔧 Technik
+- Neuer Ordner `features/` – `server.js` bindet ihn mit einer Zeile ein (plus je eine Zeile für Login- und Freundschafts-Benachrichtigung)
+- Live-Kanal per Server-Sent Events mit Einmal-Tickets, damit das Login-Token nicht in URLs/Logs landet
+- Neue Tabellen: `secrets`, `push_subscriptions`, `push_settings`, `app_config` (werden automatisch angelegt, löschen sich mit dem Konto)
+- Neue Abhängigkeit: `web-push`
+
 ## 27. Oktober 2026 – Aufräumen & GitHub
 
 ### 🛡️ Sicherheit

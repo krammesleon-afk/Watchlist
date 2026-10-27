@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Datei-Drop – Satho-Net</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="/satho-page.css">
+<link rel="stylesheet" href="/icons.css">
+<style>
+  .me-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .me-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--ink-faint); flex: none; }
+  .me-dot.on { background: var(--ok); box-shadow: 0 0 10px rgba(127, 214, 160, 0.7); }
+
+  .peers { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; }
+  .peer {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 6px;
+    padding: 22px 14px 16px;
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    transition: border-color 0.2s ease, transform 0.2s ease, background 0.2s ease;
+  }
+  .peer:hover { border-color: var(--glass-border-hover); transform: translateY(-2px); }
+  .peer.dragover { border-color: var(--accent-a); background: rgba(246, 162, 76, 0.12); }
+  .peer-ico {
+    width: 58px; height: 58px; border-radius: 50%;
+    display: grid; place-items: center; font-size: 1.7rem;
+    background: linear-gradient(135deg, rgba(246, 162, 76, 0.25), rgba(239, 93, 168, 0.25));
+  }
+  .peer-name { font-weight: 600; font-size: 0.95rem; word-break: break-word; }
+  .peer-sub { color: var(--ink-faint); font-size: 0.76rem; margin-top: -4px; }
+  .peer .row { justify-content: center; margin-top: 6px; }
+
+  .empty { text-align: center; padding: 34px 20px; }
+  .empty .big { font-size: 2.4rem; }
+
+  .transfer { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; }
+  .transfer + .transfer { margin-top: 14px; padding-top: 14px; border-top: 1px solid rgba(244, 237, 228, 0.08); }
+  .transfer-dir { font-size: 1.4rem; }
+  .transfer-title { font-weight: 600; font-size: 0.9rem; word-break: break-word; }
+  .transfer-status { font-size: 0.8rem; color: var(--ink-dim); }
+  .transfer-status.err { color: var(--err); }
+  .transfer-status.ok { color: var(--ok); }
+  .bar { height: 6px; border-radius: 6px; background: rgba(255, 255, 255, 0.08); overflow: hidden; margin-top: 6px; }
+  .bar > span { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--accent-a), var(--accent-b)); transition: width 0.2s linear; }
+  .received { margin-top: 8px; display: flex; flex-direction: column; gap: 6px; }
+  .received a { color: var(--accent-a); font-size: 0.86rem; word-break: break-all; }
+  .received img { max-width: 220px; max-height: 160px; border-radius: 10px; display: block; }
+  .received pre { margin: 0; white-space: pre-wrap; word-break: break-word; font-size: 0.86rem;
+    background: rgba(0, 0, 0, 0.3); padding: 10px; border-radius: 10px; max-height: 240px; overflow: auto; }
+
+  dialog {
+    color: var(--ink);
+    background: #1f1a17;
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius);
+    padding: 22px;
+    max-width: min(440px, calc(100vw - 32px));
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+  }
+  dialog::backdrop { background: rgba(0, 0, 0, 0.55); backdrop-filter: blur(3px); }
+  dialog h3 { margin: 0 0 8px; }
+  dialog .row { justify-content: flex-end; margin-top: 16px; }
+  dialog ul { margin: 6px 0 0; padding-left: 20px; font-size: 0.88rem; color: var(--ink-dim); }
+</style>
+<script src="/icons.js" defer></script>
+<script src="/auth-common.js" defer></script>
+<script src="/bg-dim.js"></script>
+</head>
+<body>
+
+<div id="bg-image-layer"></div>
+<div id="bg-scrim"></div>
+
+<main>
+  <div class="page-head">
+    <h1><span data-ic="upload"></span>Datei-Drop</h1>
+    <p>Dateien und Text direkt von Gerät zu Gerät schicken – zwischen deinen eigenen Geräten und zu Freunden.
+       Öffne diese Seite einfach auf beiden Geräten. Die Daten gehen direkt rüber, nicht über den Server.</p>
+  </div>
+
+  <div class="panel me-bar">
+    <span class="me-dot" id="me-dot"></span>
+    <span class="muted">Dieses Gerät heißt</span>
+    <strong id="me-name">…</strong>
+    <button class="btn ghost small" id="rename-btn">Umbenennen</button>
+    <span class="faint grow" id="me-state" style="text-align:right">Verbinde …</span>
+  </div>
+
+  <div class="section-label">Erreichbare Geräte</div>
+  <div class="peers" id="peers"></div>
+  <div class="panel empty hidden" id="peers-empty">
+    <div class="big">📡</div>
+    <p class="muted">Noch kein anderes Gerät da. Öffne <strong>Datei-Drop</strong> auf deinem Handy oder PC –
+      oder bitte einen Freund, die Seite zu öffnen.</p>
+  </div>
+
+  <div class="section-label">Übertragungen</div>
+  <div class="panel" id="transfers">
+    <p class="faint" id="transfers-empty" style="margin:0">Noch nichts gesendet oder empfangen.</p>
+  </div>
+</main>
+
+<input type="file" id="file-input" multiple hidden>
+
+<dialog id="incoming">
+  <h3 id="incoming-title"></h3>
+  <div id="incoming-body"></div>
+  <div class="row">
+    <button class="btn ghost" id="incoming-no">Ablehnen</button>
+    <button class="btn" id="incoming-yes">Annehmen</button>
+  </div>
+</dialog>
+
+<dialog id="text-dialog">
+  <h3 id="text-title">Text senden</h3>
+  <textarea id="text-input" placeholder="Link, Notiz, Code …" style="min-width:min(380px,80vw)"></textarea>
+  <div class="row">
+    <button class="btn ghost" id="text-cancel">Abbrechen</button>
+    <button class="btn" id="text-send">Senden</button>
+  </div>
+</dialog>
+
+<footer>
+  watchlist.satho-net.de &middot; <a href="/">Startseite</a>
+</footer>
+
+<script src="/satho-page.js"></script>
+<script src="/drop.js" defer></script>
+</body>
+</html>

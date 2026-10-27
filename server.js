@@ -248,6 +248,10 @@ const RAWG_API_KEY = process.env.RAWG_API_KEY || '';
 const RAWG_BASE_URL = 'https://api.rawg.io/api';
 const ANILIST_API_URL = 'https://graphql.anilist.co';
 
+// ============ ZUSATZFUNKTIONEN (features/) ============
+// Datei-Drop, Watch-Party, Geheimlinks, Push-Benachrichtigungen
+const features = require('./features')({ app, db, authenticateToken });
+
 // ============ ROUTES: AUTH ============
 
 // Registrierung
@@ -347,6 +351,7 @@ app.post('/api/login', async (req, res) => {
       resetRateLimit(loginKey);
       const token = jwt.sign({ id: row.id, username: row.username }, SECRET_KEY, { expiresIn: '12h' });
       console.log(`✅ Login erfolgreich: ${username}`);
+      features.push.onLogin(row, req);
       res.json({ token, user: { id: row.id, username: row.username, email: row.email } });
     } catch (e) {
       console.error('Login error:', e);
@@ -725,6 +730,7 @@ app.post('/api/friends/request', authenticateToken, (req, res) => {
           [req.user.id, target.id, 'pending'],
           (err) => {
             if (err) return res.status(500).json({ msg: 'Fehler beim Senden' });
+            features.push.onFriendRequest(target.id, req.user.username);
             res.json({ msg: 'Anfrage gesendet' });
           }
         );

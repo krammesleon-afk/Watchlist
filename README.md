@@ -14,6 +14,10 @@ Live: https://watchlist.satho-net.de
 - **Freunde** – Nutzer suchen, Anfragen senden, Profile ansehen
 - **Geteilte Listen** mit mehreren Mitgliedern
 - **Konten** mit Login, Registrierung und Passwort-Reset
+- **Datei-Drop** (`/drop.html`) – Dateien und Text direkt zwischen eigenen Geräten und zu Freunden schicken (WebRTC, Daten gehen nicht über den Server)
+- **Watch-Party** (`/party.html`) – YouTube-Videos und Trailer gemeinsam und synchron schauen, mit Chat und Warteschlange
+- **Geheimlink** (`/secret.html`) – Text im Browser verschlüsseln, Link funktioniert genau einmal
+- **Benachrichtigungen** (`/push.html`) – Web-Push aufs Handy/den PC bei Logins und Freundschaftsanfragen, plus Webhook für eigene Skripte
 
 ## Technik
 
@@ -29,7 +33,8 @@ Alle Anfragen an TMDB, RAWG und AniList laufen über den Server. Die API-Keys bl
 ## Projektstruktur
 
 ```
-server.js             Express-Server mit allen API-Routen
+server.js             Express-Server mit den Watchlist-API-Routen
+features/             Zusatzfunktionen: Datei-Drop, Watch-Party, Geheimlinks, Push
 public/               Frontend (wird statisch ausgeliefert)
 scripts/              .env ver-/entschlüsseln, Datenbank-Backup
 .env.example          Vorlage für die Umgebungsvariablen
@@ -139,6 +144,25 @@ Wiederherstellen: Dienst stoppen, Sicherung als `watchlist.db` zurückkopieren (
 
 - **Watchlist:** Jede Speicherung trägt eine Versionsnummer. Hat ein anderes Gerät inzwischen gespeichert, antwortet der Server mit `409`, und der Browser führt beide Stände zusammen (Einträge und einzelne Felder, z. B. gesehene Episoden).
 - **Geteilte Listen:** Einträge werden einzeln hinzugefügt, entfernt und kommentiert (`POST/DELETE/PATCH /api/shared-lists/:id/items`). Änderungen mehrerer Mitglieder überschreiben sich nicht.
+
+## Benachrichtigungen (Web-Push)
+
+Es wird **kein Entwicklerkonto** bei Google oder Apple gebraucht. Web-Push ist ein offener Standard: Der Server weist sich mit einem eigenen VAPID-Schlüsselpaar aus, die Browser-Hersteller stellen die Nachrichten kostenlos zu.
+
+- Das Schlüsselpaar wird beim ersten Start automatisch erzeugt und in der Datenbank (`app_config`) gespeichert. Wer es lieber in der `.env` hat: `npx web-push generate-vapid-keys` und `VAPID_PUBLIC_KEY`/`VAPID_PRIVATE_KEY` setzen. **Nicht wechseln**, sonst müssen alle Geräte neu aktiviert werden.
+- `VAPID_SUBJECT` (z. B. `mailto:du@example.de`) ist eine Kontaktadresse für die Push-Dienste, falls etwas schiefläuft.
+- **iPhone/iPad:** ab iOS 16.4, und nur wenn die Seite über „Teilen → Zum Home-Bildschirm“ installiert und von dort geöffnet wurde.
+- Eigene Skripte schicken Nachrichten über die geheime Webhook-Adresse von `/push.html`:
+
+```bash
+curl -d "Backup fertig ✅" https://watchlist.satho-net.de/api/push/hook/<token>
+```
+
+## Live-Verbindungen hinter nginx
+
+Datei-Drop und Watch-Party nutzen Server-Sent Events (`/api/drop/events`, `/api/party/:code/events`). Der Server setzt `X-Accel-Buffering: no` und schickt alle 25 s ein Ping, das reicht mit den nginx-Standardeinstellungen. Watch-Party-Räume und Drop-Geräte leben nur im Arbeitsspeicher – nach einem Neustart verbinden sich die Seiten von selbst neu, offene Räume sind dann aber weg.
+
+Datei-Drop verbindet die Geräte direkt (STUN, kein eigener TURN-Server). Im selben WLAN klappt das immer; zwischen manchen Mobilfunknetzen kann die direkte Verbindung scheitern.
 
 ## Hinweis zu sqlite3
 
