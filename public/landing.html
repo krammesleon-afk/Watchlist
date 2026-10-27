@@ -7,6 +7,7 @@
 <link rel="icon" href="data:,">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
+  [hidden] { display: none !important; }
   :root {
     --bg-base: #131110;
     --bg-base-2: #1c1815;
@@ -1238,6 +1239,13 @@
       <h3>Benachrichtigungen</h3>
       <p>Push aufs Handy bei Logins, Freundschaftsanfragen oder aus eigenen Skripten.</p>
     </a>
+    <!-- Nur für Entwickler-Accounts sichtbar (siehe showCockpitCard) -->
+    <a class="card" href="/cockpit.html" id="cockpit-card" hidden>
+      <span class="arrow">↗</span>
+      <span class="icon"><span data-ic="chartLine"></span></span>
+      <h3>Server-Cockpit</h3>
+      <p>CPU, RAM, Temperatur und Netzwerk live – dazu der Verlauf der Ausfälle.</p>
+    </a>
   </div>
 
   <div class="section-label">Bald verfügbar</div>
@@ -1640,12 +1648,25 @@
       .then(() => {
         dot.classList.add('online');
         text.textContent = 'Server online';
+        showCockpitCard();
       })
       .catch(() => {
         dot.classList.add('offline');
         text.textContent = 'Server nicht erreichbar';
       });
   })();
+
+  // Cockpit-Kachel nur zeigen, wenn der Server den Account als Entwickler kennt
+  function showCockpitCard() {
+    const token = Account.getToken();
+    if (!token) return;
+    fetch('/api/cockpit/access', { headers: { Authorization: 'Bearer ' + token } })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data && data.developer) document.getElementById('cockpit-card').hidden = false;
+      })
+      .catch(() => {});
+  }
 
   // ===== Stärke der Abdunklung =====
   (function backgroundDim() {

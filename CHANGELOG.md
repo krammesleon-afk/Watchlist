@@ -15,6 +15,17 @@
 - Neue Tabellen: `secrets`, `push_subscriptions`, `push_settings`, `app_config` (werden automatisch angelegt, löschen sich mit dem Konto)
 - Neue Abhängigkeit: `web-push`
 
+---
+
+## 27. Oktober 2026 – Server-Cockpit
+
+### 📊 Neu
+- **Server-Cockpit** (`/cockpit.html`): CPU, RAM, Temperatur, Netzwerk und Festplatte als Live-Diagramme (5 / 15 / 60 Minuten), Kacheln mit Status, Tabellenansicht
+- **Ausfall-Verlauf**: Lebenszeichen alle 30 s, Ausfälle und Neustarts werden beim Start erkannt; Verfügbarkeit der letzten 30 Tage
+- Nur für Entwickler (`DEVELOPER_USERS` in `.env`); Kachel auf der Startseite erscheint nur für sie
+
+---
+
 ## 27. Oktober 2026 – Aufräumen & GitHub
 
 ### 🛡️ Sicherheit

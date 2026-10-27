@@ -35,6 +35,7 @@ Alle Anfragen an TMDB, RAWG und AniList laufen über den Server. Die API-Keys bl
 ```
 server.js             Express-Server mit den Watchlist-API-Routen
 features/             Zusatzfunktionen: Datei-Drop, Watch-Party, Geheimlinks, Push
+cockpit.js            Messwerte & Ausfall-Erkennung fürs Server-Cockpit
 public/               Frontend (wird statisch ausgeliefert)
 scripts/              .env ver-/entschlüsseln, Datenbank-Backup
 .env.example          Vorlage für die Umgebungsvariablen
@@ -79,6 +80,7 @@ Der Server läuft dann auf `http://localhost:3000` (bzw. dem `PORT` aus der `.en
 | `CORS_ORIGINS` | Erlaubte Domains, kommagetrennt |
 | `TMDB_API_KEY` | Key von [themoviedb.org](https://www.themoviedb.org/settings/api) |
 | `RAWG_API_KEY` | Key von [rawg.io](https://rawg.io/apidocs) |
+| `DEVELOPER_USERS` | Benutzernamen mit Zugriff aufs Server-Cockpit (kommagetrennt) |
 
 Einen sicheren `JWT_SECRET` erzeugen:
 
@@ -139,6 +141,15 @@ Auf dem Server läuft es automatisch jeden **Sonntag um 03:30** per Cronjob (`cr
 Wiederherstellen: Dienst stoppen, Sicherung als `watchlist.db` zurückkopieren (und vorhandene `watchlist.db-wal`/`-shm` löschen), Dienst starten.
 
 > Die Backups liegen auf demselben Server. Gegen einen Plattenausfall hilft nur, sie ab und zu woanders hin zu kopieren.
+
+## Server-Cockpit
+
+`/cockpit.html` zeigt CPU, RAM, Temperatur, Netzwerk und Festplatte live (alle 5 s, Verlauf bis 60 Minuten) sowie Ausfälle und Neustarts der letzten 90 Tage.
+
+- **Nur für Entwickler:** Zugriff haben die Benutzernamen in `DEVELOPER_USERS` (`.env`, kommagetrennt). Für alle anderen ist die Kachel auf der Startseite unsichtbar und die API antwortet mit `403`.
+- **Ausfälle:** Der Server schreibt alle 30 s ein Lebenszeichen in die Datenbank. Liegt beim Start eine Lücke von mehr als 90 s, wird sie als Ausfall verbucht, sonst als Neustart.
+- Der Server läuft als LXC-Container: CPU und RAM sind die des Containers, die Temperatur und die „Host-Last“ die des Proxmox-Hosts.
+- Code: `cockpit.js` (Server), `public/cockpit.html` + `public/cockpit.js` (Seite).
 
 ## Gleichzeitiges Bearbeiten
 
