@@ -4,11 +4,12 @@ const mountDrop = require('./drop');
 const mountParty = require('./party');
 const mountSecrets = require('./secrets');
 const mountPush = require('./push');
+const createServerAlerts = require('./server-alerts');
 
 module.exports = function mountFeatures(deps) {
   mountDrop(deps);
   mountParty(deps);
   mountSecrets(deps);
   const push = mountPush(deps);
-  return { push };
+  return { push, serverAlerts: createServerAlerts(push) };
 };

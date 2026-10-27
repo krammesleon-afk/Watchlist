@@ -121,17 +121,24 @@
     const s = await api('/push/settings');
     $('set-login').checked = s.notifyLogin;
     $('set-friends').checked = s.notifyFriends;
+    $('set-server').checked = s.notifyServer;
+    $('set-server-row').classList.toggle('hidden', !s.developer);
     renderHook(s.hookToken);
   }
 
   async function saveSettings() {
     try {
-      await api('/push/settings', { method: 'PUT', body: { notifyLogin: $('set-login').checked, notifyFriends: $('set-friends').checked } });
+      await api('/push/settings', { method: 'PUT', body: {
+        notifyLogin: $('set-login').checked,
+        notifyFriends: $('set-friends').checked,
+        notifyServer: $('set-server').checked,
+      } });
       toast('Gespeichert');
     } catch (e) { toast(e.message, true); }
   }
   $('set-login').addEventListener('change', saveSettings);
   $('set-friends').addEventListener('change', saveSettings);
+  $('set-server').addEventListener('change', saveSettings);
 
   $('hook-copy').addEventListener('click', () => copyText($('hook-url').value));
   $('hook-new').addEventListener('click', async () => {

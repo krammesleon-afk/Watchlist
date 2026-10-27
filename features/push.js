@@ -8,6 +8,10 @@ const crypto = require('crypto');
 const webpush = require('web-push');
 
 module.exports = function mountPush({ app, db, authenticateToken }) {
+  // Entwickler wie im Server-Cockpit: Benutzernamen aus DEVELOPER_USERS
+  const developers = (process.env.DEVELOPER_USERS || '').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
+  const isDeveloper = (user) => !!user && developers.includes(String(user.username || '').toLowerCase());
+
   let ready = false;
   let vapidPublicKey = null;
 
@@ -27,8 +31,11 @@ module.exports = function mountPush({ app, db, authenticateToken }) {
       hook_token TEXT UNIQUE,
       notify_login INTEGER DEFAULT 1,
       notify_friends INTEGER DEFAULT 1,
+      notify_server INTEGER DEFAULT 1,
       FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
     )`);
+    // Spalte nachrüsten, falls die Tabelle schon ohne sie existiert
+    db.run('ALTER TABLE push_settings ADD COLUMN notify_server INTEGER DEFAULT 1', () => {});
     db.run('CREATE TABLE IF NOT EXISTS app_config (key TEXT PRIMARY KEY, value TEXT)');
     initVapid();
   });
@@ -112,6 +119,16 @@ module.exports = function mountPush({ app, db, authenticateToken }) {
     return `${browser} auf ${os}`;
   }
 
+  // Server-Warnungen an alle Entwickler, die sie nicht abgeschaltet haben
+  function notifyDevelopers(payload) {
+    if (!developers.length) return;
+    db.all(
+      `SELECT id FROM users WHERE LOWER(username) IN (${developers.map(() => '?').join(',')})`,
+      developers,
+      (err, rows) => (rows || []).forEach((r) => notifyEvent(r.id, 'notify_server', payload))
+    );
+  }
+
   // ===== Hooks für server.js =====
   function onLogin(user, req) {
     const time = new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Berlin' });
@@ -171,7 +188,13 @@ module.exports = function mountPush({ app, db, authenticateToken }) {
   app.get('/api/push/settings', authenticateToken, (req, res) => {
     getSettings(req.user.id, (err, s) => {
       if (err) return res.status(500).json({ msg: 'Serverfehler' });
-      res.json({ hookToken: s.hook_token, notifyLogin: !!s.notify_login, notifyFriends: !!s.notify_friends });
+      res.json({
+        hookToken: s.hook_token,
+        notifyLogin: !!s.notify_login,
+        notifyFriends: !!s.notify_friends,
+        notifyServer: s.notify_server !== 0,
+        developer: isDeveloper(req.user),
+      });
     });
   });
 
@@ -180,8 +203,8 @@ module.exports = function mountPush({ app, db, authenticateToken }) {
       if (err) return res.status(500).json({ msg: 'Serverfehler' });
       const b = req.body || {};
       db.run(
-        'UPDATE push_settings SET notify_login = ?, notify_friends = ? WHERE user_id = ?',
-        [b.notifyLogin ? 1 : 0, b.notifyFriends ? 1 : 0, req.user.id],
+        'UPDATE push_settings SET notify_login = ?, notify_friends = ?, notify_server = ? WHERE user_id = ?',
+        [b.notifyLogin ? 1 : 0, b.notifyFriends ? 1 : 0, b.notifyServer === false ? 0 : 1, req.user.id],
         (err) => (err ? res.status(500).json({ msg: 'Serverfehler' }) : res.json({ ok: true }))
       );
     });
@@ -236,5 +259,5 @@ module.exports = function mountPush({ app, db, authenticateToken }) {
 
   setInterval(() => hookHits.clear(), 10 * 60 * 1000).unref();
 
-  return { notifyUser, onLogin, onFriendRequest };
+  return { notifyUser, notifyDevelopers, onLogin, onFriendRequest };
 };

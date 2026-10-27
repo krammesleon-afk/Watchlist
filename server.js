@@ -1511,7 +1511,7 @@ app.get('/api/javis', authenticateToken, (req, res) => {
 });
 
 // ============ SERVER-COCKPIT (nur Entwickler) ============
-require('./cockpit')(app, db, authenticateToken);
+require('./cockpit')(app, db, authenticateToken, features.serverAlerts);
 
 // ============ ERROR HANDLER ============
 app.use((err, req, res, next) => {

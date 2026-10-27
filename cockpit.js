@@ -88,7 +88,7 @@ function readSystemUptime() {
   return raw ? Math.round(Number(raw.split(' ')[0])) : Math.round(os.uptime());
 }
 
-module.exports = function setupCockpit(app, db, authenticateToken) {
+module.exports = function setupCockpit(app, db, authenticateToken, alerts) {
   // Entwickler: Benutzernamen aus DEVELOPER_USERS in der .env (kommagetrennt)
   const developers = new Set(
     (process.env.DEVELOPER_USERS || '').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean)
@@ -128,6 +128,7 @@ module.exports = function setupCockpit(app, db, authenticateToken) {
     history.push(point);
     if (history.length > HISTORY_POINTS) history.shift();
     prev = { time, cpu, net };
+    if (alerts) alerts.onSample(point, readDisk()); // Push-Warnungen (features/server-alerts.js)
   }
   setInterval(sample, SAMPLE_MS).unref();
 
@@ -154,6 +155,7 @@ module.exports = function setupCockpit(app, db, authenticateToken) {
         const kind = gap > OUTAGE_THRESHOLD_MS ? 'outage' : 'restart';
         db.run('INSERT INTO server_events (kind, started_at, ended_at) VALUES (?, ?, ?)', [kind, row.last_seen, startedAt]);
         if (kind === 'outage') console.log(`⚠️  Ausfall erkannt: ${Math.round(gap / 60000)} Minuten offline`);
+        if (alerts) alerts.onStartup(kind, row.last_seen, startedAt);
       }
       heartbeat();
     });

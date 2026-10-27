@@ -7,6 +7,7 @@
 - **Watch-Party** (`/party.html`): Räume mit Code/Einladungslink, synchroner YouTube-Player, Trailer-Suche über TMDB, Warteschlange, Chat
 - **Geheimlink** (`/secret.html`): AES-256-GCM-Verschlüsselung im Browser, Schlüssel nur im `#`-Teil des Links, Abruf löscht den Eintrag
 - **Benachrichtigungen** (`/push.html`): Web-Push ohne Entwicklerkonto – bei Logins und Freundschaftsanfragen, Test-Button, Geräteverwaltung, Webhook für eigene Skripte
+- **Server-Warnungen per Push** für Entwickler (`DEVELOPER_USERS`): Ausfall/Neustart, CPU/RAM > 90 %, Temperatur > 80 °C, Festplatte > 90 % – mit Entwarnung und 1 h Ruhezeit (`features/server-alerts.js`, eingehängt in `cockpit.js`)
 - Startseite verlinkt die vier neuen Werkzeuge; App-Icons und Web-Manifest (für „Zum Home-Bildschirm“ auf dem iPhone)
 
 ### 🔧 Technik

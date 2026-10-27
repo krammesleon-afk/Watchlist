@@ -163,6 +163,7 @@ Es wird **kein Entwicklerkonto** bei Google oder Apple gebraucht. Web-Push ist e
 - Das Schlüsselpaar wird beim ersten Start automatisch erzeugt und in der Datenbank (`app_config`) gespeichert. Wer es lieber in der `.env` hat: `npx web-push generate-vapid-keys` und `VAPID_PUBLIC_KEY`/`VAPID_PRIVATE_KEY` setzen. **Nicht wechseln**, sonst müssen alle Geräte neu aktiviert werden.
 - `VAPID_SUBJECT` (z. B. `mailto:du@example.de`) ist eine Kontaktadresse für die Push-Dienste, falls etwas schiefläuft.
 - **iPhone/iPad:** ab iOS 16.4, und nur wenn die Seite über „Teilen → Zum Home-Bildschirm“ installiert und von dort geöffnet wurde.
+- **Server-Warnungen für Entwickler:** Wer in `DEVELOPER_USERS` steht, bekommt (abschaltbar auf `/push.html`) Push bei Ausfällen und Neustarts sowie wenn CPU oder RAM 5 Minuten über 90 %, die Temperatur 2 Minuten über 80 °C oder die Festplatte über 90 % liegt. Pro Warnung höchstens eine Nachricht pro Stunde, plus Entwarnung. Ein Ausfall wird gemeldet, sobald der Server wieder läuft – während er aus ist, kann er selbst nichts schicken.
 - Eigene Skripte schicken Nachrichten über die geheime Webhook-Adresse von `/push.html`:
 
 ```bash
