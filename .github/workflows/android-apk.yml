@@ -2,10 +2,13 @@ name: Android-APK
 
 # Baut die Android-App (android/) und hängt die APK an ein GitHub-Release.
 # Neue Version: Tag "app-v1.2" pushen, oder unter Actions → Android-APK →
-# "Run workflow" von Hand starten.
+# "Run workflow" von Hand starten. Normale Pushes auf android/ bauen nur
+# zum Testen (APK unter den Artefakten des Laufs, kein Release).
 on:
   push:
     tags: ['app-v*']
+    branches: ['**']
+    paths: ['android/**', '.github/workflows/android-apk.yml']
   workflow_dispatch:
     inputs:
       version:
@@ -36,6 +39,8 @@ jobs:
         run: |
           if [ "${{ github.ref_type }}" = "tag" ]; then
             NAME="${GITHUB_REF_NAME#app-v}"
+          elif [ "${{ github.event_name }}" = "push" ]; then
+            NAME="0.0.${{ github.run_number }}-test"
           else
             NAME="${{ inputs.version }}"
           fi
@@ -72,6 +77,7 @@ jobs:
           path: satho-net.apk
 
       - name: Release veröffentlichen
+        if: github.event_name == 'workflow_dispatch' || github.ref_type == 'tag'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.version.outputs.tag }}
