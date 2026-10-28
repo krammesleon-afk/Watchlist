@@ -170,6 +170,25 @@ Es wird **kein Entwicklerkonto** bei Google oder Apple gebraucht. Web-Push ist e
 curl -d "Backup fertig ✅" https://watchlist.satho-net.de/api/push/hook/<token>
 ```
 
+## Android-App
+
+Im Ordner `android/` liegt eine kleine Android-App, die die Seite im Vollbild lädt, ohne Browserleiste und mit eigenem Icon. Datei-Auswahl, Downloads (auch Watchlist-Export und Datei-Drop), Kamera/Mikrofon und Vollbild-Videos funktionieren. Links zu anderen Seiten öffnen sich im Browser.
+
+**Herunterladen:** [satho-net.apk (neueste Version)](https://github.com/krammesleon-afk/Watchlist/releases/latest/download/satho-net.apk). Auf dem Handy öffnen und „Aus dieser Quelle installieren“ erlauben.
+
+**Neue Version bauen:** Das übernimmt GitHub Actions (`.github/workflows/android-apk.yml`). Unter *Actions → Android-APK → Run workflow* eine Versionsnummer eingeben, oder einen Tag pushen:
+
+```bash
+git tag app-v1.1 && git push origin app-v1.1
+```
+
+Die APK landet dann als Release auf GitHub. Updates einfach über die alte App installieren, die Anmeldung bleibt erhalten.
+
+- Die App lädt `https://watchlist.satho-net.de`. Für einen anderen Server beim Bauen `-PappUrl=https://…` mitgeben.
+- **Signatur (einmal einrichten):** Android installiert Updates nur, wenn sie mit demselben Schlüssel signiert sind. Unter *Settings → Secrets and variables → Actions* vier Secrets anlegen: `ANDROID_KEYSTORE_BASE64` (die `.jks`-Datei als Base64), `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`. Ohne diese Secrets wird mit einem Wegwerf-Schlüssel signiert: Die App läuft dann zwar, aber jedes Update braucht eine Neuinstallation. Einen Schlüssel erzeugen: `keytool -genkeypair -keystore satho-net.jks -alias satho-net -keyalg RSA -keysize 2048 -validity 36500 -dname "CN=Satho-Net"`, dann `base64 -w0 satho-net.jks`. **Den Schlüssel gut aufheben und nie ins Repo legen.**
+- Web-Push-Benachrichtigungen gehen in der App nicht, weil ein Android-WebView kein Web-Push kann. Dafür die Seite weiter im Browser bzw. als installierte Web-App nutzen.
+- Kein Play Store: Die APK wird direkt installiert, es braucht kein Entwicklerkonto.
+
 ## Live-Verbindungen hinter nginx
 
 Datei-Drop und Watch-Party nutzen Server-Sent Events (`/api/drop/events`, `/api/party/:code/events`). Der Server setzt `X-Accel-Buffering: no` und schickt alle 25 s ein Ping, das reicht mit den nginx-Standardeinstellungen. Watch-Party-Räume und Drop-Geräte leben nur im Arbeitsspeicher – nach einem Neustart verbinden sich die Seiten von selbst neu, offene Räume sind dann aber weg.

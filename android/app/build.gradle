@@ -1,0 +1,54 @@
+plugins {
+    id 'com.android.application'
+}
+
+// Adresse der Seite, die die App lädt. Für einen eigenen Server beim Bauen
+// überschreiben: gradle assembleRelease -PappUrl=https://mein-server.de
+def appUrl = project.findProperty('appUrl') ?: 'https://watchlist.satho-net.de'
+def appVersionCode = (project.findProperty('appVersionCode') ?: '1').toInteger()
+def appVersionName = project.findProperty('appVersionName') ?: '1.0'
+
+android {
+    namespace 'de.sathonet.watchlist'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'de.sathonet.watchlist'
+        minSdk 24
+        targetSdk 35
+        versionCode appVersionCode
+        versionName appVersionName
+        buildConfigField 'String', 'APP_URL', "\"${appUrl}\""
+    }
+
+    buildFeatures {
+        buildConfig true
+    }
+
+    // Signaturschlüssel kommt aus den GitHub-Secrets (siehe README). Ohne
+    // Secrets wird mit einem Wegwerf-Debug-Schlüssel signiert – dann lassen
+    // sich Updates nicht über die alte App installieren.
+    def keystorePath = System.getenv('ANDROID_KEYSTORE_PATH')
+    signingConfigs {
+        if (keystorePath) {
+            release {
+                storeFile file(keystorePath)
+                storePassword System.getenv('ANDROID_KEYSTORE_PASSWORD')
+                keyAlias System.getenv('ANDROID_KEY_ALIAS')
+                keyPassword System.getenv('ANDROID_KEY_PASSWORD')
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig keystorePath ? signingConfigs.release : signingConfigs.debug
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}

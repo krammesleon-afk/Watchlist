@@ -1,5 +1,16 @@
 # Watchlist App - Changelog 🎬
 
+## 28. Oktober 2026 – Android-App
+
+### ✨ Neu
+- **Android-App** (`android/`): Vollbild-WebView für `watchlist.satho-net.de` mit eigenem Icon, Datei-Auswahl, Downloads (auch `blob:`-Links aus Export und Datei-Drop), Kamera/Mikrofon für die Watch-Party, Vollbild-Videos, Zurück-Taste und Offline-Hinweis
+- **APK über GitHub Releases**: der Workflow `android-apk.yml` baut die App bei Tags `app-v*` oder von Hand und hängt `satho-net.apk` ans Release
+
+### ⚠️ Grenzen
+- Kein Web-Push in der App (WebView-Einschränkung)
+
+---
+
 ## 27. Oktober 2026 – Watch-Party: alle Videos
 
 ### ✨ Neu
