@@ -80,8 +80,8 @@ public class MainActivity extends Activity {
     private final String appHost = Uri.parse(BuildConfig.APP_URL).getHost();
 
     // Farben passend zur Webseite
-    private static final int COLOR_BG = 0xFF131110;
-    private static final int COLOR_BAR = 0xFF1A1714;
+    private static final int COLOR_BG = 0xFF0F0E0D;
+    private static final int COLOR_BAR = 0xFF171513;
     private static final int COLOR_LINE = 0x1FF4EDE4;
     private static final int COLOR_TEXT = 0xFFF4EDE4;
     private static final int COLOR_MUTED = 0xFF9A8F84;

@@ -15,10 +15,10 @@ html.sn-app {
   -webkit-tap-highlight-color: transparent;
   -webkit-text-size-adjust: 100%;
 }
-html.sn-app body {
-  overscroll-behavior-y: none;
-  overflow-x: hidden;
-}
+/* Hinweis: kein overflow/overscroll-behavior am <body>! Auf Seiten, deren
+   <html> selbst overflow setzt (Watchlist, Games, Freunde), wird der Body
+   dadurch zu einem eigenen Scroll-Bereich, der nicht scrollt und das
+   Wischen auch nicht an die Seite weitergibt – die Seite steht dann still. */
 
 /* Ersetzt durch die Leiste der App */
 html.sn-app #global-home-btn,
@@ -205,4 +205,451 @@ html.sn-app[data-sn-page=index] .video-info-overlay {
 html.sn-app .satho-page,
 html.sn-app body > main {
   padding-bottom: 24px;
+}
+
+/* =============================================================
+   App-Design
+   Eigener Look für die App, unabhängig von der Webseite:
+   ruhige, feste Flächen statt Glas und Hintergrundbild, eine
+   Akzentfarbe, Systemschrift, große Titel links.
+   ============================================================= */
+
+html.sn-app {
+  --sn-bg: #0f0e0d;
+  --sn-surface: #191715;
+  --sn-surface-2: #221f1c;
+  --sn-line: rgba(255, 255, 255, 0.07);
+  --sn-ink: #f2ece4;
+  --sn-ink-2: #a39a90;
+  --sn-ink-3: #6f675f;
+  --sn-accent: #f6a24c;
+  --sn-accent-ink: #1a1208;
+  --sn-accent-soft: rgba(246, 162, 76, 0.14);
+  --sn-radius: 18px;
+  --sn-font: Roboto, "Google Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  /* Variablen der Webseite auf das App-Design umbiegen */
+  --bg-base: var(--sn-bg);
+  --bg-base-2: var(--sn-bg);
+  --ink: var(--sn-ink);
+  --ink-dim: var(--sn-ink-2);
+  --ink-faint: var(--sn-ink-3);
+  --accent-a: var(--sn-accent);
+  --accent-b: var(--sn-accent);
+  --glass: var(--sn-surface);
+  --glass-strong: var(--sn-surface-2);
+  --glass-border: var(--sn-line);
+  --glass-border-hover: var(--sn-line);
+  --radius: var(--sn-radius);
+
+  --bg-primary: var(--sn-bg);
+  --bg-secondary: var(--sn-surface-2);
+  --bg-tertiary: var(--sn-surface-2);
+  --bg-surface: var(--sn-surface);
+  --bg-elevated: var(--sn-surface-2);
+  --text-primary: var(--sn-ink);
+  --text-secondary: var(--sn-ink-2);
+  --text-muted: var(--sn-ink-3);
+  --accent-primary: var(--sn-accent);
+  --accent-secondary: var(--sn-accent);
+  --gradient-accent: var(--sn-accent);
+  --border-subtle: var(--sn-line);
+  --border-medium: var(--sn-line);
+  --shadow-small: none;
+  --shadow-medium: none;
+  --shadow-large: none;
+  --glow-accent: none;
+  --app-surface: var(--sn-surface);
+  --app-surface-strong: var(--sn-surface-2);
+  --app-line: var(--sn-line);
+  --app-line-strong: var(--sn-line);
+  --app-ink: var(--sn-ink);
+  --app-ink-dim: var(--sn-ink-2);
+  --app-a: var(--sn-accent);
+  --app-b: var(--sn-accent);
+  --app-c: var(--sn-accent);
+  --app-radius: var(--sn-radius);
+  --wallpaper: none;
+
+  background: var(--sn-bg) !important;
+  color-scheme: dark;
+}
+
+html.sn-app body {
+  background: var(--sn-bg) !important;
+  color: var(--sn-ink) !important;
+  font-family: var(--sn-font) !important;
+  letter-spacing: 0;
+}
+html.sn-app button,
+html.sn-app input,
+html.sn-app select,
+html.sn-app textarea {
+  font-family: var(--sn-font) !important;
+}
+
+/* Hintergrundbild, Verläufe, Rauschen und Video-Hintergrund weg */
+html.sn-app #bg-image-layer,
+html.sn-app #bg-scrim,
+html.sn-app #video-background-container,
+html.sn-app .dynamic-video-background,
+html.sn-app .video-info-overlay {
+  display: none !important;
+}
+html.sn-app body::before,
+html.sn-app body::after {
+  content: none !important;
+  display: none !important;
+}
+
+/* Kein Glas, keine Leuchtschatten, keine Einflug-Animationen */
+html.sn-app * {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  text-shadow: none !important;
+}
+html.sn-app main > *,
+html.sn-app #top-bar,
+html.sn-app .section,
+html.sn-app .fr-panel,
+html.sn-app .panel {
+  animation: none !important;
+}
+
+/* Überschriften: schlicht, ohne Verlaufsschrift */
+html.sn-app h1,
+html.sn-app h2,
+html.sn-app h3 {
+  background: none !important;
+  -webkit-background-clip: border-box !important;
+  background-clip: border-box !important;
+  -webkit-text-fill-color: currentColor !important;
+  color: var(--sn-ink) !important;
+  font-family: var(--sn-font) !important;
+  letter-spacing: -0.01em;
+}
+html.sn-app h1::after,
+html.sn-app h2::after {
+  display: none !important;
+}
+
+/* Große Seitentitel links, wie in einer App */
+html.sn-app .page-head h1,
+html.sn-app .games-header h1,
+html.sn-app .fr-header h1,
+html.sn-app .section > h1 {
+  font-size: 30px !important;
+  font-weight: 700 !important;
+  line-height: 1.15 !important;
+  text-align: left !important;
+  justify-content: flex-start !important;
+  margin: 4px 0 6px !important;
+}
+html.sn-app .page-head h1 .ic,
+html.sn-app .games-header h1 .ic,
+html.sn-app .fr-header h1 .ic,
+html.sn-app .section > h1 .ic,
+html.sn-app .page-head h1 svg,
+html.sn-app .page-head h1 > [data-ic],
+html.sn-app .section > h1 svg {
+  display: none !important;
+}
+html.sn-app .page-head p,
+html.sn-app .fr-sub {
+  color: var(--sn-ink-2) !important;
+  font-size: 15px !important;
+  line-height: 1.5 !important;
+}
+
+/* Karten / Flächen: fest, flach, abgerundet */
+html.sn-app .card,
+html.sn-app .widget,
+html.sn-app .panel,
+html.sn-app .fr-panel,
+html.sn-app .tool-group,
+html.sn-app .settings-group,
+html.sn-app .stat-card,
+html.sn-app .game-card,
+html.sn-app .filters,
+html.sn-app .chart-wrapper,
+html.sn-app .review-card,
+html.sn-app .detailed-stats,
+html.sn-app .yearly-review {
+  background: var(--sn-surface) !important;
+  border: 1px solid var(--sn-line) !important;
+  border-radius: var(--sn-radius) !important;
+  box-shadow: none !important;
+}
+html.sn-app .section {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+}
+
+/* Eingabefelder */
+html.sn-app input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]),
+html.sn-app select,
+html.sn-app textarea {
+  background: var(--sn-surface-2) !important;
+  color: var(--sn-ink) !important;
+  border: 1px solid transparent !important;
+  border-radius: 12px !important;
+  min-height: 46px;
+  padding-left: 14px !important;
+  box-shadow: none !important;
+}
+html.sn-app input:focus,
+html.sn-app select:focus,
+html.sn-app textarea:focus {
+  border-color: var(--sn-accent) !important;
+  outline: none !important;
+}
+html.sn-app ::placeholder { color: var(--sn-ink-3) !important; }
+html.sn-app input[type=checkbox],
+html.sn-app input[type=radio],
+html.sn-app input[type=range] {
+  accent-color: var(--sn-accent);
+}
+
+/* Knöpfe: Hauptaktionen gefüllt in Akzentfarbe, Rest ruhig */
+html.sn-app button,
+html.sn-app .btn {
+  border-radius: 999px !important;
+  box-shadow: none !important;
+  font-weight: 600 !important;
+}
+html.sn-app .btn:not(.ghost),
+html.sn-app .btn-primary,
+html.sn-app .btn-pink,
+html.sn-app #weather-save-btn,
+html.sn-app .search-bar button[type=submit] {
+  background: var(--sn-accent) !important;
+  color: var(--sn-accent-ink) !important;
+  border: none !important;
+}
+html.sn-app .btn.ghost,
+html.sn-app .btn-ghost {
+  background: var(--sn-surface-2) !important;
+  color: var(--sn-ink) !important;
+  border: none !important;
+}
+
+/* Reiter (Games, Freunde): Segment-Leiste */
+html.sn-app .games-tabs,
+html.sn-app .fr-tabs {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  gap: 4px !important;
+  width: 100%;
+  margin: 8px 0 14px !important;
+  padding: 4px !important;
+  background: var(--sn-surface) !important;
+  border-radius: 999px !important;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+html.sn-app .gtab,
+html.sn-app .ftab {
+  flex: 1 0 auto;
+  min-height: 38px !important;
+  padding: 0 14px !important;
+  border: none !important;
+  border-radius: 999px !important;
+  background: transparent !important;
+  color: var(--sn-ink-2) !important;
+  font-size: 14px !important;
+  white-space: nowrap;
+}
+html.sn-app .gtab.active,
+html.sn-app .ftab.active {
+  background: var(--sn-accent) !important;
+  color: var(--sn-accent-ink) !important;
+}
+
+/* Meldungen als dunkle Leiste */
+html.sn-app #snackbar,
+html.sn-app #satho-toast,
+html.sn-app #toast {
+  background: var(--sn-surface-2) !important;
+  color: var(--sn-ink) !important;
+  border: 1px solid var(--sn-line) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Abschnitts-Überschriften ("SAMMLUNG", "ERREICHBARE GERÄTE") */
+html.sn-app .section-label {
+  color: var(--sn-ink-2) !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.02em !important;
+  text-transform: none !important;
+  margin: 22px 4px 8px !important;
+}
+html.sn-app .section-label::before { display: none !important; }
+
+/* ===== Startseite als App-Start ===== */
+html.sn-app[data-sn-page=landing] .pill,
+html.sn-app[data-sn-page=landing] .account-btn,
+html.sn-app[data-sn-page=landing] #bg-control button,
+html.sn-app[data-sn-page=landing] #bg-control .dim-control {
+  background: var(--sn-surface) !important;
+  border: 1px solid var(--sn-line) !important;
+}
+/* Hintergrundbild gibt es in der App nicht → Bild-Knöpfe und Regler weg */
+html.sn-app[data-sn-page=landing] #bg-choose-btn,
+html.sn-app[data-sn-page=landing] #bg-remove-btn,
+html.sn-app[data-sn-page=landing] #bg-control .dim-control {
+  display: none !important;
+}
+/* Uhr + Wetter als eine Kopfzeile */
+html.sn-app[data-sn-page=landing] .widget-grid {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 10px !important;
+}
+html.sn-app[data-sn-page=landing] .widget {
+  padding: 16px !important;
+  min-height: 0 !important;
+}
+html.sn-app[data-sn-page=landing] #clock-time {
+  font-family: var(--sn-font) !important;
+  font-size: 34px !important;
+  font-weight: 700 !important;
+  line-height: 1.1 !important;
+}
+html.sn-app[data-sn-page=landing] #clock-date {
+  color: var(--sn-ink-2) !important;
+  font-size: 13px !important;
+}
+html.sn-app[data-sn-page=landing] .weather-setup-row {
+  flex-direction: column !important;
+  gap: 8px !important;
+}
+html.sn-app[data-sn-page=landing] .weather-setup-row > * { width: 100% !important; }
+html.sn-app[data-sn-page=landing] .search-bar {
+  background: var(--sn-surface) !important;
+  border: 1px solid var(--sn-line) !important;
+  border-radius: 999px !important;
+}
+html.sn-app[data-sn-page=landing] .search-bar input,
+html.sn-app[data-sn-page=landing] .search-bar select {
+  background: transparent !important;
+  min-height: 40px;
+}
+/* Lesezeichen-Trick braucht eine Browserleiste – in der App sinnlos */
+html.sn-app[data-sn-page=landing] #bookmarklet-link,
+html.sn-app[data-sn-page=landing] .shortcuts-hint {
+  display: none !important;
+}
+/* Kacheln als zweispaltiges App-Raster */
+html.sn-app[data-sn-page=landing] main .grid {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 10px !important;
+}
+html.sn-app[data-sn-page=landing] main .grid .card {
+  padding: 16px !important;
+  min-height: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px;
+}
+html.sn-app[data-sn-page=landing] main .grid .card .arrow { display: none !important; }
+html.sn-app[data-sn-page=landing] main .grid .card .icon {
+  width: 42px !important;
+  height: 42px !important;
+  margin: 0 !important;
+  border-radius: 12px !important;
+  background: var(--sn-accent-soft) !important;
+  color: var(--sn-accent) !important;
+}
+html.sn-app[data-sn-page=landing] main .grid .card h3,
+html.sn-app[data-sn-page=landing] main .grid .card h2 {
+  font-size: 16px !important;
+  margin: 0 !important;
+  color: var(--sn-ink) !important;
+}
+html.sn-app[data-sn-page=landing] main .grid .card p {
+  font-size: 12.5px !important;
+  line-height: 1.4 !important;
+  color: var(--sn-ink-2) !important;
+  margin: 0 !important;
+}
+html.sn-app[data-sn-page=landing] footer {
+  padding-bottom: 24px;
+}
+
+/* ===== Watchlist ===== */
+html.sn-app[data-sn-page=index] nav#sidebar-nav {
+  background: var(--sn-bg) !important;
+  border-bottom: 1px solid var(--sn-line) !important;
+  box-shadow: none !important;
+}
+html.sn-app[data-sn-page=index] nav#sidebar-nav .menu-item {
+  background: var(--sn-surface) !important;
+  border: none !important;
+  color: var(--sn-ink-2) !important;
+}
+html.sn-app[data-sn-page=index] nav#sidebar-nav .menu-item.active {
+  background: var(--sn-accent) !important;
+  color: var(--sn-accent-ink) !important;
+}
+html.sn-app[data-sn-page=index] .section > h1 {
+  display: flex !important;
+  align-items: center;
+  gap: 10px;
+  font-size: 26px !important;
+}
+html.sn-app[data-sn-page=index] .section > h1 button {
+  min-height: 32px;
+  width: 32px;
+  padding: 0 !important;
+  background: var(--sn-surface-2) !important;
+  color: var(--sn-ink-2) !important;
+  border: none !important;
+}
+html.sn-app[data-sn-page=index] .section {
+  padding: 12px 0 20px !important;
+  border-bottom: 1px solid var(--sn-line) !important;
+}
+
+/* ===== Games / Freunde ===== */
+html.sn-app .games-app,
+html.sn-app .fr-app {
+  padding-left: 16px !important;
+  padding-right: 16px !important;
+}
+html.sn-app .games-header,
+html.sn-app .fr-header {
+  flex-direction: column !important;
+  align-items: stretch !important;
+  gap: 4px !important;
+  margin-bottom: 8px !important;
+  text-align: left !important;
+}
+html.sn-app .game-grid,
+html.sn-app .item-grid,
+html.sn-app .list-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 10px !important;
+}
+
+/* ===== Werkzeugseiten ===== */
+/* Der Platz oben war für den schwebenden "Startseite"-Knopf */
+html.sn-app body > main {
+  padding-top: 20px !important;
+}
+html.sn-app .page-head {
+  text-align: left !important;
+  padding-top: 8px;
+}
+html.sn-app .tool-list a,
+html.sn-app .tool-list li {
+  border-radius: 12px;
+}
+html.sn-app .tool-group-ico {
+  background: var(--sn-accent-soft) !important;
+  color: var(--sn-accent) !important;
 }

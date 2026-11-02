@@ -1,5 +1,16 @@
 # Watchlist App - Changelog 🎬
 
+## 2. November 2026 – Android-App: eigenes Design
+
+### ✨ Neu
+- **Eigenes App-Design** statt der Webseiten-Optik (alles in `app-mobile.css`, die Webseite bleibt unverändert): feste dunkle Flächen statt Glas und Hintergrundbild, eine Akzentfarbe (Orange) auf allen Seiten – auch die Watchlist ist nicht mehr lila –, Systemschrift, große Titel links, Reiter als Segment-Leiste, Meldungen als dunkle Leiste
+- Startseite: Uhr und Wetter nebeneinander, Kacheln im Zwei-Spalten-Raster; Hintergrundbild-Knöpfe und der Lesezeichen-Hinweis fallen in der App weg
+
+### 🐛 Behoben
+- In der App ließ sich nur die Startseite scrollen: `overscroll-behavior` am `<body>` blockierte auf Watchlist, Games, Freunde & Co. das Wischen
+
+---
+
 ## 2. November 2026 – Android-App fürs Handy
 
 ### ✨ Neu
