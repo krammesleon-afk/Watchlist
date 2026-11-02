@@ -18,6 +18,7 @@ Live: https://watchlist.satho-net.de · 📜 [Changelog](CHANGELOG.md) · ⚖️
 - **Watch-Party** (`/party.html`) – Videos gemeinsam und synchron schauen: YouTube, Trailer, direkte Video-Links (mp4, webm, m3u8) oder eigene Dateien per Drag & Drop, mit Chat und Warteschlange
 - **Geheimlink** (`/secret.html`) – Text im Browser verschlüsseln, Link funktioniert genau einmal
 - **Benachrichtigungen** (`/push.html`) – Web-Push aufs Handy/den PC bei Logins und Freundschaftsanfragen, plus Webhook für eigene Skripte
+- **Android-App** (`android/`) – eigene Leiste unten, Handy-Layout, Benachrichtigungen ohne Web-Push, Update-Hinweis, App-Links; APK unter [Releases](https://github.com/krammesleon-afk/Watchlist/releases/latest)
 
 ## Technik
 

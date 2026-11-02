@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Satho-Net</string>
+    <string name="sc_watchlist">Watchlist</string>
+    <string name="sc_games">Games</string>
+    <string name="sc_drop">Datei-Drop</string>
+    <string name="sc_party">Watch-Party</string>
 </resources>

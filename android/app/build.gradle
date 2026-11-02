@@ -5,6 +5,7 @@ plugins {
 // Adresse der Seite, die die App lädt. Für einen eigenen Server beim Bauen
 // überschreiben: gradle assembleRelease -PappUrl=https://mein-server.de
 def appUrl = project.findProperty('appUrl') ?: 'https://watchlist.satho-net.de'
+def updateRepo = project.findProperty('updateRepo') ?: 'krammesleon-afk/Watchlist'
 def appVersionCode = (project.findProperty('appVersionCode') ?: '1').toInteger()
 def appVersionName = project.findProperty('appVersionName') ?: '1.0'
 
@@ -19,6 +20,9 @@ android {
         versionCode appVersionCode
         versionName appVersionName
         buildConfigField 'String', 'APP_URL', "\"${appUrl}\""
+        // Hier sucht die App nach neuen Versionen (GitHub-Releases)
+        buildConfigField 'String', 'UPDATE_REPO', "\"${updateRepo}\""
+        manifestPlaceholders = [appHost: new URI(appUrl.toString()).host]
     }
 
     buildFeatures {

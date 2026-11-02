@@ -1,5 +1,27 @@
 # Watchlist App - Changelog 🎬
 
+## 2. November 2026 – App und Web getrennt, Benachrichtigungen in der App
+
+### ✨ Neu
+- **Benachrichtigungen in der App**: Die App holt Logins, Freundschaftsanfragen, Server-Warnungen und Webhook-Nachrichten selbst ab und zeigt sie als normale Android-Benachrichtigung – im Hintergrund etwa alle 15 Minuten und sofort beim Öffnen. Antippen öffnet die passende Seite. Nach dem ersten Login fragt die App einmal nach der Erlaubnis
+- **Verlauf** auf der Benachrichtigungs-Seite (Web und App): die letzten 30 Benachrichtigungen, mit „Leeren“
+- „Benachrichtigungen“ öffnet in der App jetzt in der App statt im Browser; App-Geräte stehen mit 📱 in der Geräteliste und lassen sich dort entfernen
+- **Update-Hinweis**: Die App schaut einmal am Tag im GitHub-Release nach einer neuen Version und bietet den Download an; dazu „Mehr → Nach Updates suchen“
+- **Verknüpfungen am App-Icon** (lange drücken): Watchlist, Games, Datei-Drop, Watch-Party
+- **App-Links**: Links auf `watchlist.satho-net.de` (Watch-Party-Einladungen, Geheimlinks …) öffnen direkt in der App
+- Startseite im Web: Kachel **„Android-App“** mit Download der neuesten APK (nicht in der App selbst und nicht auf dem iPhone)
+
+### 🔀 Was ist wo
+- **Nur Web**: Suchleiste, eigene Website-Shortcuts und Lesezeichen-Trick (Browser-Startseite), Google-Kalender (Google erlaubt die Anmeldung nicht im WebView), Webhook-Beispiele, „Bald verfügbar“, Android-App-Download
+- **Nur App**: Leiste unten statt der Kacheln für Watchlist/Games/Freunde, Benachrichtigungen ohne Web-Push, Update-Hinweis, Icon-Verknüpfungen, App-Links
+
+### 🔧 Technik
+- Neues Modul `features/app.js`: Tabellen `notifications` (Postfach, max. 50 pro Nutzer) und `app_devices` (eigener Geräte-Schlüssel, nur als SHA-256 gespeichert – die App braucht so kein Login-Token im Hintergrund), Routen `/api/app/device`, `/api/app/notifications`, `/api/notifications` und `/.well-known/assetlinks.json`
+- `notifyUser` in `features/push.js` legt jede Nachricht zusätzlich ins Postfach; der Test-Knopf zählt App-Geräte mit
+- Android: `Notifier` + `NotificationJob` (JobScheduler, ohne Google-Dienste), neue Berechtigungen `POST_NOTIFICATIONS` und `RECEIVE_BOOT_COMPLETED`
+
+---
+
 ## 2. November 2026 – Android-App: eigenes Design
 
 ### ✨ Neu

@@ -21,6 +21,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.provider.Settings;
 import android.util.Base64;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -57,10 +58,13 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 /**
@@ -75,6 +79,8 @@ public class MainActivity extends Activity {
 
     private static final int REQUEST_FILE = 1;
     private static final int REQUEST_MEDIA_PERMISSION = 2;
+    private static final int REQUEST_NOTIFICATIONS = 3;
+    private static final long UPDATE_CHECK_INTERVAL = 24 * 3600 * 1000L;
 
     private final String appUrl = BuildConfig.APP_URL;
     private final String appHost = Uri.parse(BuildConfig.APP_URL).getHost();
@@ -162,11 +168,33 @@ public class MainActivity extends Activity {
         }
         setupWebView();
 
-        if (savedInstanceState != null) {
+        String start = urlFromIntent(getIntent());
+        if (start != null) {
+            webView.loadUrl(start);
+        } else if (savedInstanceState != null) {
             webView.restoreState(savedInstanceState);
         } else {
             webView.loadUrl(appUrl);
         }
+        if (savedInstanceState == null) checkForUpdate(false);
+        Notifier.schedule(this);
+    }
+
+    /**
+     * Adresse aus einem Intent: App-Links auf die eigene Seite (z. B.
+     * Watch-Party-Einladungen), Benachrichtigungen und die Verknüpfungen
+     * beim langen Drücken aufs App-Icon (sathonet:///pfad, siehe shortcuts.xml).
+     */
+    private String urlFromIntent(Intent intent) {
+        Uri uri = intent == null ? null : intent.getData();
+        if (uri == null) return null;
+        String scheme = uri.getScheme();
+        if (("https".equals(scheme) || "http".equals(scheme)) && isOwnPage(uri)) return uri.toString();
+        if ("sathonet".equals(scheme)) {
+            String path = uri.getPath() == null || uri.getPath().isEmpty() ? "/" : uri.getPath();
+            return appUrl + path + (uri.getQuery() != null ? "?" + uri.getQuery() : "");
+        }
+        return null;
     }
 
     private void setupWebView() {
@@ -255,6 +283,7 @@ public class MainActivity extends Activity {
         public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
             if (!request.isForMainFrame()) return;
             String html = "<!doctype html><html><head><meta name='viewport' content='width=device-width,initial-scale=1'>"
+                    + "<meta name='sn-offline' content='1'>"
                     + "<style>body{background:#131110;color:#eee;font-family:sans-serif;display:flex;flex-direction:column;"
                     + "align-items:center;justify-content:center;height:100vh;margin:0;text-align:center;padding:0 24px}"
                     + "button{margin-top:20px;padding:12px 28px;border:0;border-radius:10px;background:#E0A458;color:#131110;font-size:16px}"
@@ -529,9 +558,8 @@ public class MainActivity extends Activity {
                 () -> { dialog.dismiss(); openPage("/party.html"); }));
         sheet.addView(sheetRow(R.drawable.ic_shield, "Geheimlink", "Text teilen, der Link geht genau einmal", false,
                 () -> { dialog.dismiss(); openPage("/secret.html"); }));
-        // Web-Push gibt es im WebView nicht, deshalb im Browser öffnen
-        sheet.addView(sheetRow(R.drawable.ic_bell, "Benachrichtigungen", "Öffnet im Browser, Push geht nur dort", true,
-                () -> { dialog.dismiss(); openExternal(Uri.parse(appUrl + "/push.html")); }));
+        sheet.addView(sheetRow(R.drawable.ic_bell, "Benachrichtigungen", "Verlauf, Geräte und was gemeldet wird", false,
+                () -> { dialog.dismiss(); openPage("/push.html"); }));
 
         View line = new View(this);
         line.setBackgroundColor(COLOR_LINE);
@@ -541,6 +569,8 @@ public class MainActivity extends Activity {
 
         sheet.addView(sheetRow(R.drawable.ic_refresh, "Neu laden", null, false,
                 () -> { dialog.dismiss(); webView.reload(); }));
+        sheet.addView(sheetRow(R.drawable.ic_upload, "Nach Updates suchen", "Installiert: Version " + BuildConfig.VERSION_NAME, false,
+                () -> { dialog.dismiss(); checkForUpdate(true); }));
         View logout = sheetRow(R.drawable.ic_logout, "Abmelden", null, false,
                 () -> { dialog.dismiss(); confirmLogout(); });
         ((ImageView) ((LinearLayout) logout).getChildAt(0)).setImageTintList(ColorStateList.valueOf(COLOR_DANGER));
@@ -621,6 +651,7 @@ public class MainActivity extends Activity {
         String js = "(function(){try{localStorage.removeItem('auth_token');localStorage.removeItem('sathonet_user');"
                 + "sessionStorage.removeItem('auth_token');}catch(e){}"
                 + "document.cookie='auth_token=;path=/;expires=Thu, 01 Jan 1970 00:00:00 GMT';})()";
+        Notifier.clearDevice(this);
         webView.evaluateJavascript(js, v -> {
             CookieManager.getInstance().flush();
             openPage("/");
@@ -664,6 +695,168 @@ public class MainActivity extends Activity {
         public void saveFailed(String message) {
             toast("Speichern fehlgeschlagen");
         }
+
+        // ----- Benachrichtigungen (app-bridge.js, push.js) -----
+
+        /** Für wen die App angemeldet ist, "" = gar nicht. */
+        @JavascriptInterface
+        public String deviceUser() {
+            return Notifier.deviceUser(MainActivity.this);
+        }
+
+        @JavascriptInterface
+        public String deviceLabel() {
+            String model = Build.MODEL == null ? "" : Build.MODEL;
+            return "App auf " + (model.isEmpty() ? "Android" : model);
+        }
+
+        @JavascriptInterface
+        public void setDevice(String token, String user) {
+            if (token == null || token.isEmpty()) return;
+            Notifier.setDevice(MainActivity.this, token, user);
+            runOnUiThread(() -> {
+                // Einmal direkt nach dem ersten Login um Erlaubnis fragen
+                if (Notifier.needsPermission(MainActivity.this) && !askedForNotifications()) {
+                    requestNotificationPermission();
+                }
+                notifyPageStateChanged();
+            });
+        }
+
+        @JavascriptInterface
+        public void clearDevice() {
+            Notifier.clearDevice(MainActivity.this);
+        }
+
+        @JavascriptInterface
+        public String notificationState() {
+            return notificationStateNow();
+        }
+
+        @JavascriptInterface
+        public void enableNotifications() {
+            runOnUiThread(() -> {
+                if (Notifier.needsPermission(MainActivity.this) && "off".equals(notificationStateNow())) {
+                    requestNotificationPermission();
+                } else {
+                    openNotificationSettings();
+                }
+            });
+        }
+    }
+
+    private boolean askedForNotifications() {
+        return Notifier.prefs(this).getBoolean("asked_notifications", false);
+    }
+
+    private String notificationStateNow() {
+        boolean rationale = Build.VERSION.SDK_INT >= 33
+                && shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS);
+        return Notifier.state(this, askedForNotifications(), rationale);
+    }
+
+    private void requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT < 33) return;
+        Notifier.prefs(this).edit().putBoolean("asked_notifications", true).apply();
+        requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, REQUEST_NOTIFICATIONS);
+    }
+
+    private void openNotificationSettings() {
+        Intent i;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            i = new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                    .putExtra(Settings.EXTRA_APP_PACKAGE, getPackageName());
+        } else {
+            i = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + getPackageName()));
+        }
+        try {
+            startActivity(i);
+        } catch (ActivityNotFoundException e) {
+            toast("Einstellungen lassen sich nicht öffnen");
+        }
+    }
+
+    /** Lässt die Benachrichtigungs-Seite ihren Status neu anzeigen. */
+    private void notifyPageStateChanged() {
+        webView.evaluateJavascript("window.__snNotifyChanged && window.__snNotifyChanged()", null);
+    }
+
+    // ===================== Updates =====================
+
+    /**
+     * Schaut im GitHub-Release nach einer neueren APK. Automatisch höchstens
+     * einmal am Tag, von Hand über "Mehr → Nach Updates suchen". Testbuilds
+     * (Version 0.0.x-test) fragen nur von Hand.
+     */
+    private void checkForUpdate(boolean manual) {
+        if (!manual) {
+            if (BuildConfig.VERSION_NAME.contains("test")) return;
+            long last = Notifier.prefs(this).getLong("update_check", 0);
+            if (System.currentTimeMillis() - last < UPDATE_CHECK_INTERVAL) return;
+        }
+        Notifier.prefs(this).edit().putLong("update_check", System.currentTimeMillis()).apply();
+        if (manual) toast("Suche nach Updates …");
+        new Thread(() -> {
+            try {
+                HttpURLConnection con = (HttpURLConnection) new URL(
+                        "https://api.github.com/repos/" + BuildConfig.UPDATE_REPO + "/releases/latest").openConnection();
+                con.setConnectTimeout(15000);
+                con.setReadTimeout(15000);
+                con.setRequestProperty("Accept", "application/vnd.github+json");
+                if (con.getResponseCode() != 200) throw new IOException("HTTP " + con.getResponseCode());
+                JSONObject rel = new JSONObject(Notifier.readAll(con.getInputStream()));
+                con.disconnect();
+                String latest = rel.optString("tag_name", "").replaceFirst("^app-v", "");
+                String download = rel.optString("html_url", "");
+                JSONArray assets = rel.optJSONArray("assets");
+                if (assets != null) {
+                    for (int i = 0; i < assets.length(); i++) {
+                        JSONObject a = assets.getJSONObject(i);
+                        if (a.optString("name").endsWith(".apk")) download = a.optString("browser_download_url", download);
+                    }
+                }
+                final String url = download;
+                if (isNewer(latest, BuildConfig.VERSION_NAME)) {
+                    runOnUiThread(() -> showUpdateDialog(latest, url));
+                } else if (manual) {
+                    toast("Du hast die neueste Version (" + BuildConfig.VERSION_NAME + ")");
+                }
+            } catch (Exception e) {
+                if (manual) toast("Update-Suche fehlgeschlagen");
+            }
+        }).start();
+    }
+
+    /** Vergleicht Versionen wie 1.10 und 1.9 zahlenweise. */
+    static boolean isNewer(String latest, String current) {
+        if (latest == null || latest.isEmpty()) return false;
+        String[] a = latest.split("[.-]");
+        String[] b = current.split("[.-]");
+        for (int i = 0; i < Math.max(a.length, b.length); i++) {
+            int x = i < a.length ? parseIntOr(a[i], 0) : 0;
+            int y = i < b.length ? parseIntOr(b[i], 0) : 0;
+            if (x != y) return x > y;
+        }
+        return false;
+    }
+
+    private static int parseIntOr(String s, int fallback) {
+        try {
+            return Integer.parseInt(s);
+        } catch (NumberFormatException e) {
+            return fallback;
+        }
+    }
+
+    private void showUpdateDialog(String version, String url) {
+        if (isFinishing()) return;
+        new AlertDialog.Builder(this, android.R.style.Theme_Material_Dialog_Alert)
+                .setTitle("Update auf " + version)
+                .setMessage("Installiert ist Version " + BuildConfig.VERSION_NAME + ". Die neue APK wird im Browser "
+                        + "heruntergeladen – danach öffnen und über die alte App installieren. Deine Anmeldung bleibt erhalten.")
+                .setNegativeButton("Später", null)
+                .setPositiveButton("Herunterladen", (d, w) -> openExternal(Uri.parse(url)))
+                .show();
     }
 
     private void saveToDownloads(String name, String mimeType, byte[] data) throws IOException {
@@ -734,6 +927,8 @@ public class MainActivity extends Activity {
             if (allGranted) pendingPermission.grant(pendingPermission.getResources());
             else pendingPermission.deny();
             pendingPermission = null;
+        } else if (requestCode == REQUEST_NOTIFICATIONS) {
+            notifyPageStateChanged();
         }
     }
 
@@ -751,8 +946,8 @@ public class MainActivity extends Activity {
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
-        Uri uri = intent.getData();
-        if (uri != null && isOwnPage(uri)) webView.loadUrl(uri.toString());
+        String url = urlFromIntent(intent);
+        if (url != null) webView.loadUrl(url);
     }
 
     @Override
@@ -772,6 +967,9 @@ public class MainActivity extends Activity {
     protected void onResume() {
         super.onResume();
         webView.onResume();
+        // Beim Öffnen gleich nachsehen, statt auf den nächsten Hintergrund-Abruf zu warten
+        if (Notifier.hasDevice(this)) new Thread(() -> Notifier.poll(getApplicationContext())).start();
+        notifyPageStateChanged();
     }
 
     @Override

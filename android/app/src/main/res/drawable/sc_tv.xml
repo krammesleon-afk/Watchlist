@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Icon für die Verknüpfungen am App-Icon (shortcuts.xml): ic_tv auf dunklem Kreis -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <path
+        android:pathData="M24,0a24,24 0 1,0 0,48a24,24 0 1,0 0,-48z"
+        android:fillColor="#FF171513" />
+    <group
+        android:translateX="12"
+        android:translateY="12">
+        <path
+            android:pathData="M4.7,7h14.6a2.2,2.2 0 0 1 2.2,2.2v8.6a2.2,2.2 0 0 1 -2.2,2.2h-14.6a2.2,2.2 0 0 1 -2.2,-2.2v-8.6a2.2,2.2 0 0 1 2.2,-2.2z"
+            android:strokeColor="#FFF6A24C"
+            android:strokeWidth="1.8"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+        <path
+            android:pathData="M7.5 3l4.5 4 4.5-4"
+            android:strokeColor="#FFF6A24C"
+            android:strokeWidth="1.8"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+    </group>
+</vector>

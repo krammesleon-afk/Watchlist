@@ -24,6 +24,12 @@
   .devices li { display: flex; align-items: center; gap: 10px; padding: 8px 0; font-size: 0.9rem; }
   .devices li + li { border-top: 1px solid rgba(244, 237, 228, 0.08); }
   .devices .this { font-size: 0.72rem; color: var(--ok); margin-left: 6px; }
+  .section-label-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .history { list-style: none; margin: 0; padding: 0; }
+  .history li { padding: 9px 0; font-size: 0.9rem; }
+  .history li + li { border-top: 1px solid rgba(244, 237, 228, 0.08); }
+  .history a { color: inherit; text-decoration: none; display: block; }
+  .history .when { float: right; margin-left: 10px; }
   .hook-url { display: flex; gap: 8px; }
   .hook-url input { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.78rem; }
 </style>
@@ -40,7 +46,7 @@
   <div class="page-head">
     <h1><span data-ic="info"></span>Benachrichtigungen</h1>
     <p>Lass dir von deinem Server Bescheid geben – aufs Handy oder den PC, auch wenn die Seite geschlossen ist.
-       Ganz ohne App und ohne Entwicklerkonto.</p>
+       <span id="intro-web">Ganz ohne App und ohne Entwicklerkonto.</span></p>
   </div>
 
   <div class="panel ios-hint hidden" id="ios-hint">
@@ -70,6 +76,15 @@
     <label class="switch hidden" id="set-server-row"><input type="checkbox" id="set-server">
       <span>🖥️ Server-Warnungen <span class="faint">(nur Entwickler)</span> – Ausfälle, Neustarts, CPU/RAM über 90 %, Temperatur über 80 °C, Festplatte über 90 %</span></label>
     <p class="faint" style="margin:6px 0 0">Gilt für alle deine Geräte, auf denen Benachrichtigungen aktiv sind.</p>
+  </div>
+
+  <div class="section-label section-label-row">
+    <span>Verlauf</span>
+    <button class="btn ghost small hidden" id="history-clear">Leeren</button>
+  </div>
+  <div class="panel">
+    <ul class="history" id="history"></ul>
+    <p class="faint" id="history-empty" style="margin:0">Noch keine Benachrichtigungen.</p>
   </div>
 
   <div class="section-label">Deine Geräte</div>

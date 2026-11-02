@@ -11,6 +11,9 @@
   const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   const isStandalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
   const supported = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+  // Android-App: kein Web-Push im WebView, die App holt die Benachrichtigungen
+  // selbst ab (features/app.js). Die App stellt dafür window.SathoNetApp bereit.
+  const nativeApp = window.SathoNetApp && typeof window.SathoNetApp.notificationState === 'function' ? window.SathoNetApp : null;
 
   let registration = null;
   let subscription = null;
@@ -27,7 +30,27 @@
     return Uint8Array.from(raw, (c) => c.charCodeAt(0));
   }
 
+  function refreshAppStatus() {
+    const state = nativeApp.notificationState();
+    const btn = $('toggle-btn');
+    btn.classList.remove('ghost');
+    btn.disabled = false;
+    btn.classList.toggle('hidden', state === 'on' || state === 'nodevice');
+    if (state === 'on') {
+      setStatus('🔔', 'In der App aktiv', 'Die App schaut regelmäßig nach – auch wenn sie geschlossen ist (je nach Akku-Sparmodus mit etwas Verzögerung).');
+    } else if (state === 'blocked') {
+      setStatus('🚫', 'Benachrichtigungen sind blockiert', 'Erlaube sie in den Android-Einstellungen für Satho-Net.');
+      btn.textContent = 'Einstellungen';
+    } else if (state === 'nodevice') {
+      setStatus('⏳', 'App wird angemeldet …', 'Einen Moment.');
+    } else {
+      setStatus('🔕', 'In der App aus', 'Erlaube der App, dir Benachrichtigungen zu zeigen.');
+      btn.textContent = 'Erlauben';
+    }
+  }
+
   async function refreshStatus() {
+    if (nativeApp) return refreshAppStatus();
     if (!supported) {
       if (isIOS && !isStandalone) {
         $('ios-hint').classList.remove('hidden');
@@ -56,6 +79,7 @@
   }
 
   $('toggle-btn').addEventListener('click', async () => {
+    if (nativeApp) return nativeApp.enableNotifications();
     $('toggle-btn').disabled = true;
     try {
       if (subscription) {
@@ -84,6 +108,7 @@
     try {
       const { sent } = await api('/push/test', { method: 'POST' });
       toast(sent ? `Test an ${sent} Gerät${sent === 1 ? '' : 'e'} geschickt` : 'Kein Gerät aktiv', !sent);
+      loadHistory().catch(() => {});
     } catch (e) { toast(e.message, true); }
   });
 
@@ -94,7 +119,7 @@
     $('test-btn').disabled = devices.length === 0;
     $('devices').innerHTML = devices.map((d) => `
       <li>
-        <span class="grow">${escapeHtml(d.label || 'Gerät')}
+        <span class="grow">${d.kind === 'app' ? '📱 ' : ''}${escapeHtml(d.label || 'Gerät')}
           ${subscription && subscription.endpoint === d.endpoint ? '<span class="this">● dieses Gerät</span>' : ''}
           <br><span class="faint">seit ${escapeHtml(new Date(d.created_at.replace(' ', 'T') + 'Z').toLocaleDateString('de-DE'))}</span>
         </span>
@@ -148,6 +173,38 @@
     toast('Neue Adresse erzeugt');
   });
 
+  // ===== Verlauf =====
+  function timeAgo(sqlDate) {
+    const d = new Date(String(sqlDate).replace(' ', 'T') + 'Z');
+    const min = Math.round((Date.now() - d) / 60000);
+    if (min < 1) return 'gerade eben';
+    if (min < 60) return `vor ${min} Min.`;
+    if (min < 24 * 60) return `vor ${Math.round(min / 60)} Std.`;
+    return d.toLocaleDateString('de-DE');
+  }
+  async function loadHistory() {
+    const { notifications } = await api('/notifications');
+    $('history-empty').classList.toggle('hidden', notifications.length > 0);
+    $('history-clear').classList.toggle('hidden', notifications.length === 0);
+    $('history').innerHTML = notifications.map((n) => {
+      const href = /^\/(?!\/)/.test(n.url || '') && n.url !== '/' ? n.url : null;
+      const inner = `<span class="faint when">${escapeHtml(timeAgo(n.created_at))}</span>
+        <strong>${escapeHtml(n.title)}</strong><br><span class="muted">${escapeHtml(n.body || '')}</span>`;
+      return `<li>${href ? `<a href="${escapeHtml(href)}">${inner}</a>` : inner}</li>`;
+    }).join('');
+  }
+  $('history-clear').addEventListener('click', async () => {
+    await api('/notifications', { method: 'DELETE' });
+    loadHistory();
+  });
+
+  if (nativeApp) {
+    $('intro-web').textContent = 'In der App ist dafür nichts weiter nötig – nur einmal erlauben.';
+    // Die App meldet sich, wenn sich Erlaubnis oder Anmeldung ändern
+    window.__snNotifyChanged = () => { refreshAppStatus(); loadDevices(); };
+  }
+
   refreshStatus().catch((e) => setStatus('⚠️', 'Fehler', e.message)).finally(loadDevices);
   loadSettings().catch((e) => toast(e.message, true));
+  loadHistory().catch(() => {});
 })();

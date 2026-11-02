@@ -76,3 +76,50 @@
   new MutationObserver(follow).observe(nav, { subtree: true, attributes: true, attributeFilter: ['class'] });
   follow();
 })();
+
+// Benachrichtigungen: Nach dem Login meldet sich die App beim Server an und
+// bekommt einen eigenen Geräte-Schlüssel, mit dem sie im Hintergrund neue
+// Benachrichtigungen abholt (features/app.js). Nach dem Abmelden auf der
+// Webseite vergisst die App das Gerät wieder.
+(function () {
+  if (window.__sathoNetDevice || !window.SathoNetApp || !window.SathoNetApp.deviceUser) return;
+  if (document.querySelector('meta[name=sn-offline]')) return; // Offline-Hinweis der App
+  window.__sathoNetDevice = true;
+
+  function readToken() {
+    try {
+      var t = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
+      if (t) return t;
+    } catch (e) {}
+    var m = document.cookie.match(/(?:^|;\s*)auth_token=([^;]+)/);
+    return m ? decodeURIComponent(m[1]) : null;
+  }
+
+  function tokenUser(token) {
+    try {
+      var p = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+      if (p.exp && p.exp * 1000 < Date.now()) return null;
+      return p.username || null;
+    } catch (e) { return null; }
+  }
+
+  var app = window.SathoNetApp;
+  var token = readToken();
+  var user = token && tokenUser(token);
+  var registered = app.deviceUser(); // "" = kein Gerät
+
+  if (!token) {
+    if (registered) app.clearDevice();
+    return;
+  }
+  if (!user || user === registered) return; // abgelaufen bzw. schon angemeldet
+
+  fetch('/api/app/device', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+    body: JSON.stringify({ label: app.deviceLabel() }),
+  })
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (d) { if (d && d.deviceToken) app.setDevice(d.deviceToken, d.username || user); })
+    .catch(function () {});
+})();

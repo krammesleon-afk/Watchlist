@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Verknüpfungen beim langen Drücken aufs App-Icon (auch zum Ablegen auf dem
+     Home-Bildschirm). sathonet:///pfad öffnet den Pfad auf der App-Seite. -->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="watchlist"
+        android:enabled="true"
+        android:icon="@drawable/sc_tv"
+        android:shortcutShortLabel="@string/sc_watchlist">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="de.sathonet.watchlist"
+            android:targetClass="de.sathonet.watchlist.MainActivity"
+            android:data="sathonet:///index.html" />
+    </shortcut>
+    <shortcut
+        android:shortcutId="games"
+        android:enabled="true"
+        android:icon="@drawable/sc_gamepad"
+        android:shortcutShortLabel="@string/sc_games">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="de.sathonet.watchlist"
+            android:targetClass="de.sathonet.watchlist.MainActivity"
+            android:data="sathonet:///games.html" />
+    </shortcut>
+    <shortcut
+        android:shortcutId="drop"
+        android:enabled="true"
+        android:icon="@drawable/sc_upload"
+        android:shortcutShortLabel="@string/sc_drop">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="de.sathonet.watchlist"
+            android:targetClass="de.sathonet.watchlist.MainActivity"
+            android:data="sathonet:///drop.html" />
+    </shortcut>
+    <shortcut
+        android:shortcutId="party"
+        android:enabled="true"
+        android:icon="@drawable/sc_play"
+        android:shortcutShortLabel="@string/sc_party">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="de.sathonet.watchlist"
+            android:targetClass="de.sathonet.watchlist.MainActivity"
+            android:data="sathonet:///party.html" />
+    </shortcut>
+</shortcuts>

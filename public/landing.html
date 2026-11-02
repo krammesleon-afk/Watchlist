@@ -1239,6 +1239,16 @@
       <h3>Benachrichtigungen</h3>
       <p>Push aufs Handy bei Logins, Freundschaftsanfragen oder aus eigenen Skripten.</p>
     </a>
+    <!-- Nur im Browser: In der App selbst und auf dem iPhone ergibt der Link keinen Sinn -->
+    <a class="card" href="https://github.com/krammesleon-afk/Watchlist/releases/latest/download/satho-net.apk" id="app-card" hidden>
+      <span class="arrow">↓</span>
+      <span class="icon">📱</span>
+      <h3>Android-App</h3>
+      <p>Satho-Net als App: eigene Leiste unten, Benachrichtigungen, Einladungslinks öffnen direkt in der App.</p>
+    </a>
+    <script>
+      document.getElementById('app-card').hidden = /SathoNetApp|iPhone|iPad|iPod/.test(navigator.userAgent);
+    </script>
     <!-- Nur für Entwickler-Accounts sichtbar (siehe showCockpitCard) -->
     <a class="card" href="/cockpit.html" id="cockpit-card" hidden>
       <span class="arrow">↗</span>

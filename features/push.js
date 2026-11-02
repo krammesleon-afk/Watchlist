@@ -7,7 +7,7 @@
 const crypto = require('crypto');
 const webpush = require('web-push');
 
-module.exports = function mountPush({ app, db, authenticateToken }) {
+module.exports = function mountPush({ app, db, authenticateToken, inbox }) {
   // Entwickler wie im Server-Cockpit: Benutzernamen aus DEVELOPER_USERS
   const developers = (process.env.DEVELOPER_USERS || '').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
   const isDeveloper = (user) => !!user && developers.includes(String(user.username || '').toLowerCase());
@@ -64,7 +64,13 @@ module.exports = function mountPush({ app, db, authenticateToken }) {
 
   // Schickt eine Nachricht an alle Geräte eines Nutzers. Abgelaufene Abos
   // (Browser deinstalliert, Berechtigung entzogen) werden dabei aufgeräumt.
-  function notifyUser(userId, payload) {
+  // Zusätzlich landet alles im Postfach, das die Android-App abholt (features/app.js).
+  async function notifyUser(userId, payload) {
+    const appDevices = inbox ? await inbox.store(userId, payload) : 0;
+    return appDevices + await sendWebPush(userId, payload);
+  }
+
+  function sendWebPush(userId, payload) {
     if (!ready) return Promise.resolve(0);
     return new Promise((resolve) => {
       db.all('SELECT id, endpoint, keys FROM push_subscriptions WHERE user_id = ?', [userId], async (err, rows) => {
@@ -174,15 +180,25 @@ module.exports = function mountPush({ app, db, authenticateToken }) {
     db.run('DELETE FROM push_subscriptions WHERE endpoint = ? AND user_id = ?', [String((req.body || {}).endpoint || ''), req.user.id], () => res.json({ ok: true }));
   });
 
+  // Browser-Abos und App-Geräte in einer Liste; App-Geräte haben IDs "app-<n>"
   app.get('/api/push/devices', authenticateToken, (req, res) => {
-    db.all('SELECT id, endpoint, label, created_at FROM push_subscriptions WHERE user_id = ? ORDER BY created_at', [req.user.id], (err, rows) => {
-      if (err) return res.status(500).json({ msg: 'Serverfehler' });
-      res.json({ devices: rows });
-    });
+    db.all(
+      `SELECT CAST(id AS TEXT) AS id, endpoint, label, created_at, 'web' AS kind FROM push_subscriptions WHERE user_id = ?
+       UNION ALL
+       SELECT 'app-' || id, NULL, label, created_at, 'app' FROM app_devices WHERE user_id = ?
+       ORDER BY created_at`,
+      [req.user.id, req.user.id],
+      (err, rows) => {
+        if (err) return res.status(500).json({ msg: 'Serverfehler' });
+        res.json({ devices: rows });
+      }
+    );
   });
 
   app.delete('/api/push/devices/:id', authenticateToken, (req, res) => {
-    db.run('DELETE FROM push_subscriptions WHERE id = ? AND user_id = ?', [req.params.id, req.user.id], () => res.json({ ok: true }));
+    const m = /^app-(\d+)$/.exec(req.params.id);
+    const sql = m ? 'DELETE FROM app_devices WHERE id = ? AND user_id = ?' : 'DELETE FROM push_subscriptions WHERE id = ? AND user_id = ?';
+    db.run(sql, [m ? m[1] : req.params.id, req.user.id], () => res.json({ ok: true }));
   });
 
   app.get('/api/push/settings', authenticateToken, (req, res) => {

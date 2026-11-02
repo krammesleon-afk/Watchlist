@@ -528,19 +528,23 @@ html.sn-app[data-sn-page=landing] .weather-setup-row {
   gap: 8px !important;
 }
 html.sn-app[data-sn-page=landing] .weather-setup-row > * { width: 100% !important; }
-html.sn-app[data-sn-page=landing] .search-bar {
-  background: var(--sn-surface) !important;
-  border: 1px solid var(--sn-line) !important;
-  border-radius: 999px !important;
-}
-html.sn-app[data-sn-page=landing] .search-bar input,
-html.sn-app[data-sn-page=landing] .search-bar select {
-  background: transparent !important;
-  min-height: 40px;
-}
-/* Lesezeichen-Trick braucht eine Browserleiste – in der App sinnlos */
-html.sn-app[data-sn-page=landing] #bookmarklet-link,
-html.sn-app[data-sn-page=landing] .shortcuts-hint {
+/* Nur fürs Web: Die Startseite ist dort auch Browser-Startseite (Suche,
+   eigene Website-Shortcuts samt Lesezeichen-Trick). In der App öffnet das
+   nur den Browser, deshalb fällt es weg. Ebenso:
+   - Google-Kalender: Google lässt die Anmeldung in einem WebView nicht zu
+   - Watchlist/Games/Freunde: stehen schon in der Leiste unten
+   - "Bald verfügbar" und der Download-Link der App selbst */
+html.sn-app[data-sn-page=landing] .search-bar,
+html.sn-app[data-sn-page=landing] .section-label-row:has(#bookmarklet-link),
+html.sn-app[data-sn-page=landing] .shortcuts-hint,
+html.sn-app[data-sn-page=landing] #shortcuts-grid,
+html.sn-app[data-sn-page=landing] #calendar-gcal,
+html.sn-app[data-sn-page=landing] main .grid .card[href="/index.html"],
+html.sn-app[data-sn-page=landing] main .grid .card[href="/games.html"],
+html.sn-app[data-sn-page=landing] main .grid .card[href="/friends.html"],
+html.sn-app[data-sn-page=landing] #app-card,
+html.sn-app[data-sn-page=landing] .section-label:has(+ .grid .card.soon),
+html.sn-app[data-sn-page=landing] .grid:has(.card.soon) {
   display: none !important;
 }
 /* Kacheln als zweispaltiges App-Raster */
@@ -653,3 +657,10 @@ html.sn-app .tool-group-ico {
   background: var(--sn-accent-soft) !important;
   color: var(--sn-accent) !important;
 }
+
+/* ===== Benachrichtigungen ===== */
+/* iPhone-Anleitung gilt nicht für die App */
+html.sn-app[data-sn-page=push] #ios-hint { display: none !important; }
+/* Webhook für eigene Skripte: Sache für den PC, in der App nur im Weg */
+html.sn-app[data-sn-page=push] .section-label:has(+ .panel #hook-url),
+html.sn-app[data-sn-page=push] .panel:has(#hook-url) { display: none !important; }
