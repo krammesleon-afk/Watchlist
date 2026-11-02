@@ -174,6 +174,8 @@ curl -d "Backup fertig ✅" https://watchlist.satho-net.de/api/push/hook/<token>
 
 Im Ordner `android/` liegt eine kleine Android-App, die die Seite im Vollbild lädt, ohne Browserleiste und mit eigenem Icon. Datei-Auswahl, Downloads (auch Watchlist-Export und Datei-Drop), Kamera/Mikrofon und Vollbild-Videos funktionieren. Links zu anderen Seiten öffnen sich im Browser.
 
+Die App hat eine eigene Leiste unten (Start, Watchlist, Games, Freunde, Mehr) und ein Handy-Layout. Dafür wird die Webseite **nicht** geändert: Die App spielt `android/app/src/main/assets/app-mobile.css` in jede Seite ein und markiert sie mit `html.sn-app` und `data-sn-page="…"` (z. B. `index`, `games`). Anpassungen am Handy-Design also dort machen. Zum Ausprobieren am PC reicht es, die Datei in den DevTools mit Handy-Ansicht einzufügen und `<html>` die Klasse `sn-app` zu geben.
+
 **Herunterladen:** [satho-net.apk (neueste Version)](https://github.com/krammesleon-afk/Watchlist/releases/latest/download/satho-net.apk). Auf dem Handy öffnen und „Aus dieser Quelle installieren“ erlauben.
 
 **Neue Version bauen:** Das übernimmt GitHub Actions (`.github/workflows/android-apk.yml`). Unter *Actions → Android-APK → Run workflow* eine Versionsnummer eingeben, oder einen Tag pushen:

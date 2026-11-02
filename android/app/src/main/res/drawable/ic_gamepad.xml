@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Aus public/icons.js ("gamepad") -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:pathData="M6.5,7.5h11a4,4 0 0 1 4,4v2.5a4,4 0 0 1 -4,4h-11a4,4 0 0 1 -4,-4v-2.5a4,4 0 0 1 4,-4z"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="1.8"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <path
+        android:pathData="M7 10.8v3.4M5.3 12.5h3.4"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="1.8"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <path
+        android:pathData="M14.55,11.4a1.05,1.05 0 1 0 2.1,0a1.05,1.05 0 1 0 -2.1,0z"
+        android:fillColor="#FFFFFFFF" />
+    <path
+        android:pathData="M16.95,14a1.05,1.05 0 1 0 2.1,0a1.05,1.05 0 1 0 -2.1,0z"
+        android:fillColor="#FFFFFFFF" />
+</vector>

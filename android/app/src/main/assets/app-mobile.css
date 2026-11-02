@@ -1,0 +1,208 @@
+/* =============================================================
+   Handy-Darstellung der Satho-Net-App
+
+   Wird von der Android-App in jede Seite eingefügt (siehe
+   app-bridge.js), die Webseite selbst bleibt unverändert.
+   Die App hat eine eigene Leiste unten (Start, Watchlist, Games,
+   Freunde, Mehr). Deshalb fallen hier die schwebenden Knöpfe der
+   Webseite weg, und die Seiten bekommen ein kompakteres Layout.
+
+   html.sn-app            = Seite läuft in der App
+   html[data-sn-page=…]   = landing, index, games, friends, tools, …
+   ============================================================= */
+
+html.sn-app {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+}
+html.sn-app body {
+  overscroll-behavior-y: none;
+  overflow-x: hidden;
+}
+
+/* Ersetzt durch die Leiste der App */
+html.sn-app #global-home-btn,
+html.sn-app #global-logout-btn,
+html.sn-app #bg-dim-control {
+  display: none !important;
+}
+
+/* Hover-Effekte bleiben auf dem Handy nach dem Tippen "hängen" */
+html.sn-app *:hover { transform: none !important; }
+
+/* Eingabefelder: 16px verhindert das Hineinzoomen, größere Tippflächen */
+html.sn-app input:not([type=checkbox]):not([type=radio]):not([type=range]),
+html.sn-app select,
+html.sn-app textarea {
+  font-size: 16px !important;
+}
+html.sn-app button,
+html.sn-app select {
+  min-height: 40px;
+}
+
+/* Seiten mit dem Abstand für den alten "Startseite"-Knopf */
+html.sn-app .games-app,
+html.sn-app .fr-app {
+  padding-top: 20px !important;
+}
+
+/* Meldungen über der App-Leiste statt darunter */
+html.sn-app #snackbar,
+html.sn-app #satho-toast,
+html.sn-app #toast {
+  bottom: 16px !important;
+}
+
+/* ===== Startseite ===== */
+html.sn-app[data-sn-page=landing] #top-bar {
+  position: relative;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 16px 4px;
+  animation: none;
+}
+html.sn-app[data-sn-page=landing] #top-bar-left {
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+html.sn-app[data-sn-page=landing] #bg-control {
+  flex-wrap: nowrap;
+  gap: 6px;
+  margin-left: auto;
+}
+html.sn-app[data-sn-page=landing] #cal-toggle-btn > span:not(.cal-badge),
+html.sn-app[data-sn-page=landing] #bg-choose-btn > span {
+  display: none;
+}
+html.sn-app[data-sn-page=landing] #bg-control button,
+html.sn-app[data-sn-page=landing] #bg-control .dim-control {
+  min-height: 36px;
+  padding: 7px 11px;
+}
+html.sn-app[data-sn-page=landing] #bg-dim-range { width: 56px; }
+html.sn-app[data-sn-page=landing] main {
+  padding: 12px 16px 32px;
+}
+html.sn-app[data-sn-page=landing] .calendar-panel {
+  top: 8px !important;
+  left: 8px !important;
+  right: 8px !important;
+  width: auto !important;
+  max-height: calc(100% - 16px) !important;
+}
+
+/* ===== Watchlist ===== */
+/* Eigene Navigation der Watchlist: oben als wischbare Reiter-Leiste
+   statt einer zweiten, gequetschten Leiste unten */
+html.sn-app[data-sn-page=index] nav#sidebar-nav {
+  top: 0 !important;
+  bottom: auto !important;
+  height: 54px !important;
+  width: 100% !important;
+  flex-direction: row !important;
+  justify-content: flex-start !important;
+  align-items: center !important;
+  gap: 6px;
+  padding: 0 10px !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  scrollbar-width: none;
+  border-top: none !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(19, 17, 16, 0.92) !important;
+}
+html.sn-app[data-sn-page=index] nav#sidebar-nav::-webkit-scrollbar { display: none; }
+html.sn-app[data-sn-page=index] nav#sidebar-nav .menu-item {
+  flex: 0 0 auto !important;
+  flex-direction: row !important;
+  gap: 6px;
+  height: 36px !important;
+  width: auto !important;
+  padding: 0 14px !important;
+  border-radius: 999px;
+  font-size: 1rem !important;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  outline: none !important;
+  box-shadow: none !important;
+}
+html.sn-app[data-sn-page=index] nav#sidebar-nav .menu-item::before { display: none; }
+html.sn-app[data-sn-page=index] nav#sidebar-nav .menu-item span {
+  display: inline !important;
+  opacity: 1 !important;
+  margin: 0 !important;
+  font-size: 0.85rem !important;
+  letter-spacing: 0 !important;
+}
+html.sn-app[data-sn-page=index] nav#sidebar-nav .menu-item.active {
+  color: #131110 !important;
+  border-color: transparent;
+  background: linear-gradient(120deg, #f6a24c, #ef5da8) !important;
+}
+html.sn-app[data-sn-page=index] main.content {
+  padding-top: 62px !important;
+  padding-bottom: 24px !important;
+  padding-left: 12px !important;
+  padding-right: 12px !important;
+}
+html.sn-app[data-sn-page=index] main.content * {
+  box-sizing: border-box;
+  max-width: 100%;
+}
+html.sn-app[data-sn-page=index] .section {
+  scroll-margin-top: 62px;
+  margin: 8px 0 !important;
+  padding: 12px 0 !important;
+}
+html.sn-app[data-sn-page=index] .section h1 {
+  font-size: 1.4rem !important;
+}
+/* Filter untereinander statt nebeneinander über den Rand hinaus */
+html.sn-app[data-sn-page=index] .filters {
+  position: static !important;
+  display: grid !important;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px !important;
+  padding: 12px !important;
+  margin: 8px 0 16px !important;
+  border-radius: 16px !important;
+  width: 100% !important;
+}
+html.sn-app[data-sn-page=index] .filters > * {
+  min-width: 0;
+}
+html.sn-app[data-sn-page=index] .filters label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.75rem !important;
+}
+html.sn-app[data-sn-page=index] .filters select,
+html.sn-app[data-sn-page=index] .filters input {
+  width: 100% !important;
+  margin: 0 !important;
+}
+html.sn-app[data-sn-page=index] .filters > input,
+html.sn-app[data-sn-page=index] .filters > button {
+  grid-column: 1 / -1;
+}
+html.sn-app[data-sn-page=index] .grid-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 10px !important;
+}
+html.sn-app[data-sn-page=index] .stats-dashboard {
+  gap: 10px !important;
+}
+html.sn-app[data-sn-page=index] .fab {
+  bottom: 20px !important;
+}
+html.sn-app[data-sn-page=index] .video-info-overlay {
+  bottom: 16px !important;
+}
+
+/* ===== Werkzeugseiten (Drop, Party, Geheimlink, Push, Werkzeugkasten) ===== */
+html.sn-app .satho-page,
+html.sn-app body > main {
+  padding-bottom: 24px;
+}

@@ -52,3 +52,8 @@ android {
         targetCompatibility JavaVersion.VERSION_17
     }
 }
+
+dependencies {
+    // Handy-Stylesheet schon beim Laden der Seite einspielen (addDocumentStartJavaScript)
+    implementation 'androidx.webkit:webkit:1.12.1'
+}

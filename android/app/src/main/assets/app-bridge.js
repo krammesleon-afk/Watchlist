@@ -59,3 +59,20 @@
     return click.apply(this, arguments);
   };
 })();
+
+// Watchlist: Die Reiter-Leiste oben ist wischbar. Damit der aktive Reiter
+// beim Scrollen durch die Abschnitte sichtbar bleibt, wird er mitgeführt.
+(function () {
+  if (window.__sathoNetNav) return;
+  var nav = document.getElementById('sidebar-nav');
+  if (!nav || !document.documentElement.classList.contains('sn-app')) return;
+  window.__sathoNetNav = true;
+  function follow() {
+    var active = nav.querySelector('.menu-item.active');
+    if (!active) return;
+    var left = active.offsetLeft - (nav.clientWidth - active.offsetWidth) / 2;
+    nav.scrollTo({ left: Math.max(0, left), behavior: 'smooth' });
+  }
+  new MutationObserver(follow).observe(nav, { subtree: true, attributes: true, attributeFilter: ['class'] });
+  follow();
+})();

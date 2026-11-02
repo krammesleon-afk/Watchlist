@@ -1,5 +1,25 @@
 # Watchlist App - Changelog 🎬
 
+## 2. November 2026 – Android-App fürs Handy
+
+### ✨ Neu
+- **Eigene Leiste unten** in der App: Start, Watchlist, Games, Freunde und „Mehr“ (Werkzeugkasten, Datei-Drop, Watch-Party, Geheimlink, Benachrichtigungen, Neu laden, Abmelden). Nochmal auf den aktiven Reiter tippen scrollt nach oben
+- **Handy-Layout**, ohne dass die Webseite geändert wird: Die App spielt `android/app/src/main/assets/app-mobile.css` in jede Seite ein
+  - Schwebende Knöpfe (Startseite, Abmelden, Helligkeitsregler) fallen weg, die Leiste ersetzt sie
+  - Watchlist: Abschnitte als wischbare Reiter oben statt einer zweiten, gequetschten Leiste unten; Filter in zwei Spalten statt über den Rand hinaus
+  - Startseite: obere Leiste kompakt in zwei Zeilen statt übereinander geschoben
+  - Eingabefelder mit 16 px, damit nichts hineinzoomt
+- **Ladebalken** oben beim Seitenwechsel
+
+### 🐛 Behoben
+- Ab Android 15 lag die Seite unter Status- und Navigationsleiste; die App hält die Ränder jetzt selbst frei, auch für die Tastatur
+
+### 🔧 Technik
+- `androidx.webkit` für `addDocumentStartJavaScript` (Stylesheet vor dem ersten Zeichnen, kein Aufblitzen); ältere WebViews bekommen es beim Sichtbarwerden der Seite
+- Icons der Leiste aus `public/icons.js` als Vector-Drawables
+
+---
+
 ## 28. Oktober 2026 – Android-App
 
 ### ✨ Neu

@@ -2,20 +2,33 @@ package de.sathonet.watchlist;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.app.Dialog;
 import android.app.DownloadManager;
 import android.content.ActivityNotFoundException;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.res.ColorStateList;
 import android.graphics.Color;
+import android.graphics.Insets;
+import android.graphics.Typeface;
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.RippleDrawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.util.Base64;
+import android.util.TypedValue;
+import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
+import android.view.WindowInsets;
+import android.view.WindowInsetsController;
 import android.view.WindowManager;
 import android.webkit.CookieManager;
 import android.webkit.JavascriptInterface;
@@ -29,7 +42,14 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.webkit.WebViewCompat;
+import androidx.webkit.WebViewFeature;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -39,11 +59,16 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import org.json.JSONObject;
 
 /**
- * Die ganze App ist ein Vollbild-WebView, der die Satho-Net-Seite lädt.
- * Dazu kommt nur, was ein WebView nicht von selbst kann: Datei-Auswahl,
+ * Die App ist ein WebView, der die Satho-Net-Seite lädt, mit einer eigenen
+ * Leiste unten (Start, Watchlist, Games, Freunde, Mehr). Die Webseite bleibt
+ * unverändert: Für das Handy-Layout spielt die App app-mobile.css in jede
+ * Seite ein (siehe app-style.js).
+ * Dazu kommt, was ein WebView nicht von selbst kann: Datei-Auswahl,
  * Downloads, Kamera/Mikrofon, Vollbild-Videos und externe Links.
  */
 public class MainActivity extends Activity {
@@ -54,7 +79,35 @@ public class MainActivity extends Activity {
     private final String appUrl = BuildConfig.APP_URL;
     private final String appHost = Uri.parse(BuildConfig.APP_URL).getHost();
 
+    // Farben passend zur Webseite
+    private static final int COLOR_BG = 0xFF131110;
+    private static final int COLOR_BAR = 0xFF1A1714;
+    private static final int COLOR_LINE = 0x1FF4EDE4;
+    private static final int COLOR_TEXT = 0xFFF4EDE4;
+    private static final int COLOR_MUTED = 0xFF9A8F84;
+    private static final int COLOR_ACCENT = 0xFFF6A24C;
+    private static final int COLOR_DANGER = 0xFFEF6B6B;
+
+    /** Reiter der unteren Leiste. path == null: öffnet das Mehr-Menü. */
+    private static final String[][] TABS = {
+            {"Start", "/"},
+            {"Watchlist", "/index.html"},
+            {"Games", "/games.html"},
+            {"Freunde", "/friends.html"},
+            {"Mehr", null},
+    };
+    private static final int[] TAB_ICONS = {
+            R.drawable.ic_home, R.drawable.ic_tv, R.drawable.ic_gamepad, R.drawable.ic_users, R.drawable.ic_more,
+    };
+    private static final int TAB_MORE = 4;
+
     private FrameLayout root;
+    private LinearLayout appLayout;
+    private LinearLayout bottomBar;
+    private ProgressBar progressBar;
+    private final List<View> tabViews = new ArrayList<>();
+    private int activeTab = -1;
+    private int navBarInset;
     private WebView webView;
     private AppChromeClient chromeClient;
     private ValueCallback<Uri[]> fileCallback;
@@ -62,20 +115,51 @@ public class MainActivity extends Activity {
     private View customView;
     private WebChromeClient.CustomViewCallback customViewCallback;
     private String bridgeScript;
+    private String styleScript;
+    private boolean styleAtDocumentStart;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         root = new FrameLayout(this);
-        root.setBackgroundColor(Color.parseColor("#131110"));
-        webView = new WebView(this);
-        webView.setBackgroundColor(Color.parseColor("#131110"));
-        root.addView(webView, new FrameLayout.LayoutParams(
+        root.setBackgroundColor(COLOR_BG);
+
+        appLayout = new LinearLayout(this);
+        appLayout.setOrientation(LinearLayout.VERTICAL);
+        root.addView(appLayout, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+
+        FrameLayout content = new FrameLayout(this);
+        appLayout.addView(content, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
+
+        webView = new WebView(this);
+        webView.setBackgroundColor(COLOR_BG);
+        content.addView(webView, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+
+        progressBar = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
+        progressBar.setMax(100);
+        progressBar.setProgressTintList(ColorStateList.valueOf(COLOR_ACCENT));
+        progressBar.setProgressBackgroundTintList(ColorStateList.valueOf(Color.TRANSPARENT));
+        progressBar.setVisibility(View.GONE);
+        FrameLayout.LayoutParams pbParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(3));
+        pbParams.gravity = Gravity.TOP;
+        content.addView(progressBar, pbParams);
+
+        bottomBar = buildBottomBar();
+        appLayout.addView(bottomBar, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
         setContentView(root);
+        setupEdgeToEdge();
 
         bridgeScript = readAsset("app-bridge.js");
+        String css = readAsset("app-mobile.css");
+        String style = readAsset("app-style.js");
+        if (css != null && style != null) {
+            styleScript = "var __snCss = " + JSONObject.quote(css) + ";\n" + style;
+        }
         setupWebView();
 
         if (savedInstanceState != null) {
@@ -98,6 +182,15 @@ public class MainActivity extends Activity {
         CookieManager cookies = CookieManager.getInstance();
         cookies.setAcceptCookie(true);
         cookies.setAcceptThirdPartyCookies(webView, true);
+
+        // Handy-Stylesheet vor dem ersten Zeichnen einspielen, damit nichts
+        // aufblitzt. Ältere WebViews bekommen es, sobald die Seite sichtbar wird.
+        if (styleScript != null && WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) {
+            Uri u = Uri.parse(appUrl);
+            String origin = u.getScheme() + "://" + u.getHost() + (u.getPort() != -1 ? ":" + u.getPort() : "");
+            WebViewCompat.addDocumentStartJavaScript(webView, styleScript, Collections.singleton(origin));
+            styleAtDocumentStart = true;
+        }
 
         webView.addJavascriptInterface(new Bridge(), "SathoNetApp");
         webView.setWebViewClient(new AppWebViewClient());
@@ -137,9 +230,25 @@ public class MainActivity extends Activity {
         }
 
         @Override
+        public void doUpdateVisitedHistory(WebView view, String url, boolean isReload) {
+            updateActiveTab(url);
+        }
+
+        @Override
+        public void onPageCommitVisible(WebView view, String url) {
+            injectStyle(view, url);
+        }
+
+        @Override
         public void onPageFinished(WebView view, String url) {
+            injectStyle(view, url);
             if (bridgeScript != null) view.evaluateJavascript(bridgeScript, null);
             CookieManager.getInstance().flush();
+        }
+
+        private void injectStyle(WebView view, String url) {
+            if (styleAtDocumentStart || styleScript == null || url == null) return;
+            if (isOwnPage(Uri.parse(url))) view.evaluateJavascript(styleScript, null);
         }
 
         @Override
@@ -157,6 +266,12 @@ public class MainActivity extends Activity {
     }
 
     private class AppChromeClient extends WebChromeClient {
+        @Override
+        public void onProgressChanged(WebView view, int newProgress) {
+            progressBar.setProgress(newProgress);
+            progressBar.setVisibility(newProgress >= 100 ? View.GONE : View.VISIBLE);
+        }
+
         @Override
         public boolean onShowFileChooser(WebView view, ValueCallback<Uri[]> callback, FileChooserParams params) {
             if (fileCallback != null) fileCallback.onReceiveValue(null);
@@ -209,8 +324,8 @@ public class MainActivity extends Activity {
             customViewCallback = callback;
             root.addView(view, new FrameLayout.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-            webView.setVisibility(View.GONE);
-            getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+            appLayout.setVisibility(View.GONE);
+            setSystemBarsHidden(true);
         }
 
         @Override
@@ -218,11 +333,298 @@ public class MainActivity extends Activity {
             if (customView == null) return;
             root.removeView(customView);
             customView = null;
-            webView.setVisibility(View.VISIBLE);
-            getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+            appLayout.setVisibility(View.VISIBLE);
+            setSystemBarsHidden(false);
             if (customViewCallback != null) customViewCallback.onCustomViewHidden();
             customViewCallback = null;
         }
+    }
+
+    // ===================== Ränder, Leiste unten, Mehr-Menü =====================
+
+    private int dp(float v) {
+        return Math.round(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, v, getResources().getDisplayMetrics()));
+    }
+
+    /**
+     * Ab Android 11 zeichnet die App bis unter Status- und Navigationsleiste
+     * (ab Android 15 ist das Pflicht). Die Ränder werden hier selbst
+     * freigehalten, und die Tastatur schiebt die Seite nach oben.
+     */
+    private void setupEdgeToEdge() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return;
+        Window w = getWindow();
+        w.setDecorFitsSystemWindows(false);
+        w.setStatusBarColor(Color.TRANSPARENT);
+        w.setNavigationBarColor(Color.TRANSPARENT);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) w.setNavigationBarContrastEnforced(false);
+        appLayout.setOnApplyWindowInsetsListener((v, insets) -> {
+            Insets bars = insets.getInsets(WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout());
+            boolean imeVisible = insets.isVisible(WindowInsets.Type.ime());
+            int imeBottom = insets.getInsets(WindowInsets.Type.ime()).bottom;
+            navBarInset = bars.bottom;
+            v.setPadding(bars.left, bars.top, bars.right, imeVisible ? imeBottom : 0);
+            bottomBar.setPadding(0, 0, 0, bars.bottom);
+            bottomBar.setVisibility(imeVisible || isBarHiddenPage(webView.getUrl()) ? View.GONE : View.VISIBLE);
+            return WindowInsets.CONSUMED;
+        });
+    }
+
+    private void setSystemBarsHidden(boolean hidden) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            WindowInsetsController c = getWindow().getInsetsController();
+            if (c == null) return;
+            if (hidden) {
+                c.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+                c.hide(WindowInsets.Type.systemBars());
+            } else {
+                c.show(WindowInsets.Type.systemBars());
+            }
+        } else if (hidden) {
+            getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        } else {
+            getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        }
+    }
+
+    private LinearLayout buildBottomBar() {
+        LinearLayout bar = new LinearLayout(this);
+        bar.setOrientation(LinearLayout.HORIZONTAL);
+        GradientDrawable bg = new GradientDrawable();
+        bg.setColor(COLOR_BAR);
+        // Haarlinie oben
+        android.graphics.drawable.LayerDrawable layered = new android.graphics.drawable.LayerDrawable(
+                new android.graphics.drawable.Drawable[]{new ColorDrawable(COLOR_LINE), bg});
+        layered.setLayerInset(1, 0, 1, 0, 0);
+        bar.setBackground(layered);
+
+        for (int i = 0; i < TABS.length; i++) {
+            final int index = i;
+            LinearLayout tab = new LinearLayout(this);
+            tab.setOrientation(LinearLayout.VERTICAL);
+            tab.setGravity(Gravity.CENTER);
+            tab.setPadding(0, dp(8), 0, dp(8));
+            tab.setContentDescription(TABS[i][0]);
+            tab.setBackground(new RippleDrawable(ColorStateList.valueOf(0x22F6A24C), null, new ColorDrawable(Color.WHITE)));
+
+            FrameLayout pill = new FrameLayout(this);
+            ImageView icon = new ImageView(this);
+            icon.setImageResource(TAB_ICONS[i]);
+            FrameLayout.LayoutParams ip = new FrameLayout.LayoutParams(dp(22), dp(22));
+            ip.gravity = Gravity.CENTER;
+            pill.addView(icon, ip);
+            tab.addView(pill, new LinearLayout.LayoutParams(dp(56), dp(30)));
+
+            TextView label = new TextView(this);
+            label.setText(TABS[i][0]);
+            label.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f);
+            label.setPadding(0, dp(3), 0, 0);
+            label.setMaxLines(1);
+            tab.addView(label, new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+            tab.setOnClickListener(v -> onTabClicked(index));
+            bar.addView(tab, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+            tabViews.add(tab);
+        }
+        styleTabs();
+        return bar;
+    }
+
+    private void styleTabs() {
+        for (int i = 0; i < tabViews.size(); i++) {
+            LinearLayout tab = (LinearLayout) tabViews.get(i);
+            FrameLayout pill = (FrameLayout) tab.getChildAt(0);
+            ImageView icon = (ImageView) pill.getChildAt(0);
+            TextView label = (TextView) tab.getChildAt(1);
+            boolean active = i == activeTab;
+            icon.setImageTintList(ColorStateList.valueOf(active ? COLOR_ACCENT : COLOR_MUTED));
+            label.setTextColor(active ? COLOR_TEXT : COLOR_MUTED);
+            label.setTypeface(Typeface.create("sans-serif-medium", active ? Typeface.BOLD : Typeface.NORMAL));
+            if (active) {
+                GradientDrawable p = new GradientDrawable();
+                p.setColor(0x2EF6A24C);
+                p.setCornerRadius(dp(15));
+                pill.setBackground(p);
+            } else {
+                pill.setBackground(null);
+            }
+            tab.setSelected(active);
+        }
+    }
+
+    /** Welcher Reiter gehört zur gerade angezeigten Seite? */
+    private void updateActiveTab(String url) {
+        if (url == null) return;
+        Uri uri = Uri.parse(url);
+        if (!isOwnPage(uri)) return;
+        String path = uri.getPath() == null ? "/" : uri.getPath();
+        int tab;
+        if (path.equals("/") || path.equals("/landing.html") || path.equals("/home.html")) tab = 0;
+        else if (path.equals("/index.html")) tab = 1;
+        else if (path.equals("/games.html")) tab = 2;
+        else if (path.equals("/friends.html")) tab = 3;
+        else tab = TAB_MORE;
+        if (tab != activeTab) {
+            activeTab = tab;
+            styleTabs();
+        }
+        bottomBar.setVisibility(isBarHiddenPage(url) ? View.GONE : View.VISIBLE);
+    }
+
+    /** Registrieren und Passwort-Reset brauchen keine Leiste. */
+    private boolean isBarHiddenPage(String url) {
+        if (url == null) return false;
+        String path = Uri.parse(url).getPath();
+        return path != null && (path.equals("/register.html") || path.equals("/password-reset.html"));
+    }
+
+    private void onTabClicked(int index) {
+        if (index == TAB_MORE) {
+            showMoreSheet();
+            return;
+        }
+        if (index == activeTab) {
+            // Nochmal tippen: nach oben scrollen
+            webView.evaluateJavascript("window.scrollTo({top:0,behavior:'smooth'})", null);
+            return;
+        }
+        openPage(TABS[index][1]);
+    }
+
+    private void openPage(String path) {
+        activeTab = -1;
+        updateActiveTab(appUrl + path);
+        webView.loadUrl(appUrl + path);
+    }
+
+    private void showMoreSheet() {
+        final Dialog dialog = new Dialog(this);
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+
+        LinearLayout sheet = new LinearLayout(this);
+        sheet.setOrientation(LinearLayout.VERTICAL);
+        sheet.setPadding(dp(8), dp(10), dp(8), dp(12) + navBarInset);
+        GradientDrawable bg = new GradientDrawable();
+        bg.setColor(COLOR_BAR);
+        float r = dp(24);
+        bg.setCornerRadii(new float[]{r, r, r, r, 0, 0, 0, 0});
+        sheet.setBackground(bg);
+
+        View handle = new View(this);
+        GradientDrawable hb = new GradientDrawable();
+        hb.setColor(0x40F4EDE4);
+        hb.setCornerRadius(dp(2));
+        handle.setBackground(hb);
+        LinearLayout.LayoutParams hp = new LinearLayout.LayoutParams(dp(36), dp(4));
+        hp.gravity = Gravity.CENTER_HORIZONTAL;
+        hp.bottomMargin = dp(10);
+        sheet.addView(handle, hp);
+
+        sheet.addView(sheetRow(R.drawable.ic_wrench, "Werkzeugkasten", "Nachschlagewerke und Werkzeuge", false,
+                () -> { dialog.dismiss(); openPage("/tools.html"); }));
+        sheet.addView(sheetRow(R.drawable.ic_upload, "Datei-Drop", "Dateien zwischen Geräten schicken", false,
+                () -> { dialog.dismiss(); openPage("/drop.html"); }));
+        sheet.addView(sheetRow(R.drawable.ic_play, "Watch-Party", "Videos gemeinsam und synchron schauen", false,
+                () -> { dialog.dismiss(); openPage("/party.html"); }));
+        sheet.addView(sheetRow(R.drawable.ic_shield, "Geheimlink", "Text teilen, der Link geht genau einmal", false,
+                () -> { dialog.dismiss(); openPage("/secret.html"); }));
+        // Web-Push gibt es im WebView nicht, deshalb im Browser öffnen
+        sheet.addView(sheetRow(R.drawable.ic_bell, "Benachrichtigungen", "Öffnet im Browser, Push geht nur dort", true,
+                () -> { dialog.dismiss(); openExternal(Uri.parse(appUrl + "/push.html")); }));
+
+        View line = new View(this);
+        line.setBackgroundColor(COLOR_LINE);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 1);
+        lp.setMargins(dp(16), dp(6), dp(16), dp(6));
+        sheet.addView(line, lp);
+
+        sheet.addView(sheetRow(R.drawable.ic_refresh, "Neu laden", null, false,
+                () -> { dialog.dismiss(); webView.reload(); }));
+        View logout = sheetRow(R.drawable.ic_logout, "Abmelden", null, false,
+                () -> { dialog.dismiss(); confirmLogout(); });
+        ((ImageView) ((LinearLayout) logout).getChildAt(0)).setImageTintList(ColorStateList.valueOf(COLOR_DANGER));
+        ((TextView) ((LinearLayout) ((LinearLayout) logout).getChildAt(1)).getChildAt(0)).setTextColor(COLOR_DANGER);
+        sheet.addView(logout);
+
+        dialog.setContentView(sheet);
+        Window w = dialog.getWindow();
+        if (w != null) {
+            w.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+            w.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            w.setGravity(Gravity.BOTTOM);
+            w.setWindowAnimations(android.R.style.Animation_InputMethod);
+            w.setDimAmount(0.55f);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                w.setDecorFitsSystemWindows(false);
+                w.setNavigationBarColor(Color.TRANSPARENT);
+            }
+        }
+        dialog.show();
+    }
+
+    private View sheetRow(int iconRes, String title, String subtitle, boolean external, Runnable action) {
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setPadding(dp(16), dp(12), dp(16), dp(12));
+        row.setMinimumHeight(dp(56));
+        GradientDrawable mask = new GradientDrawable();
+        mask.setColor(Color.WHITE);
+        mask.setCornerRadius(dp(14));
+        row.setBackground(new RippleDrawable(ColorStateList.valueOf(0x22F6A24C), null, mask));
+
+        ImageView icon = new ImageView(this);
+        icon.setImageResource(iconRes);
+        icon.setImageTintList(ColorStateList.valueOf(COLOR_ACCENT));
+        LinearLayout.LayoutParams ip = new LinearLayout.LayoutParams(dp(24), dp(24));
+        ip.rightMargin = dp(18);
+        row.addView(icon, ip);
+
+        LinearLayout texts = new LinearLayout(this);
+        texts.setOrientation(LinearLayout.VERTICAL);
+        TextView t = new TextView(this);
+        t.setText(title);
+        t.setTextColor(COLOR_TEXT);
+        t.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
+        texts.addView(t);
+        if (subtitle != null) {
+            TextView st = new TextView(this);
+            st.setText(subtitle);
+            st.setTextColor(COLOR_MUTED);
+            st.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
+            texts.addView(st);
+        }
+        row.addView(texts, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+
+        if (external) {
+            ImageView ext = new ImageView(this);
+            ext.setImageResource(R.drawable.ic_external);
+            ext.setImageTintList(ColorStateList.valueOf(COLOR_MUTED));
+            row.addView(ext, new LinearLayout.LayoutParams(dp(18), dp(18)));
+        }
+        row.setOnClickListener(v -> action.run());
+        return row;
+    }
+
+    private void confirmLogout() {
+        new AlertDialog.Builder(this, android.R.style.Theme_Material_Dialog_Alert)
+                .setTitle("Abmelden?")
+                .setMessage("Du kannst dich jederzeit wieder anmelden.")
+                .setNegativeButton("Abbrechen", null)
+                .setPositiveButton("Abmelden", (d, which) -> logout())
+                .show();
+    }
+
+    /** Meldet ab wie die Webseite selbst (Token und Nutzer aus dem Speicher). */
+    private void logout() {
+        String js = "(function(){try{localStorage.removeItem('auth_token');localStorage.removeItem('sathonet_user');"
+                + "sessionStorage.removeItem('auth_token');}catch(e){}"
+                + "document.cookie='auth_token=;path=/;expires=Thu, 01 Jan 1970 00:00:00 GMT';})()";
+        webView.evaluateJavascript(js, v -> {
+            CookieManager.getInstance().flush();
+            openPage("/");
+        });
     }
 
     /** Normale http(s)-Downloads übernimmt der Android-Downloadmanager. */
