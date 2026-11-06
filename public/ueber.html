@@ -146,6 +146,18 @@
     </div>
   </section>
 
+  <!-- Völlig inoffizielle Auszeichnungen -->
+  <section class="panel">
+    <h2>🏆 Ausgezeichnet fragwürdig</h2>
+    <p class="muted">Sämtliche Preise wurden von uns selbst verliehen. Die Jury war gerade allein zu Hause.</p>
+    <div class="grid2">
+      <div class="mini"><div class="big">🥇</div><b>Goldenes Sofa</b><p>Für besondere Verdienste im Bereich „Ich steh nach dieser Folge auf“.</p></div>
+      <div class="mini"><div class="big">🕳️</div><b>Schwarzes Loch der Freizeit</b><p>Du wolltest nur einen Trailer schauen. Jetzt ist Montag.</p></div>
+      <div class="mini"><div class="big">📚</div><b>Weltmeister im Vormerken</b><p>Die Watchlist wächst schneller als die Zeit, die du zum Anschauen hast.</p></div>
+      <div class="mini"><div class="big">🛠️</div><b>Läuft-bei-mir-Siegel</b><p>Auf dem Rechner des Entwicklers getestet. Unter sehr emotionalen Bedingungen.</p></div>
+    </div>
+  </section>
+
   <!-- FAQ -->
   <section class="panel">
     <h2>❓ Häufig gestellte Fragen</h2>
@@ -159,6 +171,14 @@
       <p>Das ist kein Bug, das ist ein Feature in Ausbildung.</p></details>
     <details><summary>Warum heißt das Satho-Net?</summary>
       <p>Alle guten Namen waren schon vergeben, und „Kellerprojekt 3000“ hat im Meeting knapp verloren.</p></details>
+    <details><summary>Warum ist meine Watchlist länger als mein Lebenslauf?</summary>
+      <p>Weil „für später merken“ deutlich weniger Überwindung kostet als „jetzt anfangen“. Wir unterstützen deine Sammlung ungelöster Freizeitpläne.</p></details>
+    <details><summary>Zählt Anime schauen als Weiterbildung?</summary>
+      <p>Du lernst Durchhaltevermögen, Freundschaft und dass man den Namen einer Attacke sehr laut sagen muss. Ob dein Chef das anerkennt, ist eine andere Staffel.</p></details>
+    <details><summary>Kann die App für mich entscheiden?</summary>
+      <p>Wir können dir Vorschläge machen. Für das anschließende „Nee, darauf hab ich gerade keine Lust“ bist du selbst zuständig.</p></details>
+    <details><summary>Was passiert, wenn ich alles gesehen habe?</summary>
+      <p>Dann geh bitte kurz ans Fenster und prüfe, ob es draußen noch dieselbe Jahreszeit ist.</p></details>
     <details><summary>Wer hat die Fernbedienung?</summary>
       <p>Sie ist im Sofa. Sie ist immer im Sofa.</p></details>
   </section>
@@ -176,6 +196,27 @@
     <div class="progress hidden" id="restart-progress"><div></div></div>
     <p class="muted" id="gag-out" aria-live="polite" style="margin-bottom:0"></p>
     <p class="faint" style="margin-bottom:0">Psst: Es gibt auch einen Geheimcode. ↑ ↑ ↓ ↓ …</p>
+  </section>
+
+  <!-- Kleine Helfer für große Ausreden -->
+  <section class="panel">
+    <h2>🧪 Institut für angewandtes Weiterschauen</h2>
+    <p>Unsere Forschungsabteilung besteht aus einem Sofa und einer sehr überzeugenden Decke.</p>
+    <div class="grid2">
+      <div class="mini">
+        <b>📝 Der Ausreden-Generator</b>
+        <p>Für den Moment, in dem jemand fragt, warum du immer noch wach bist.</p>
+        <button class="btn" id="excuse-btn" style="margin-top:12px">Ausrede anfordern</button>
+        <p id="excuse-out" role="status">Die nächste Folge startet sowieso gleich.</p>
+      </div>
+      <div class="mini">
+        <b>🎲 Filmabend-Orakel</b>
+        <p>Wissenschaftlich ungefähr so belastbar wie „Der Trailer sah gut aus“.</p>
+        <button class="btn" id="oracle-btn" style="margin-top:12px">Orakel befragen</button>
+        <p id="oracle-out" role="status">Das Orakel wartet auf seine Snacks.</p>
+      </div>
+    </div>
+    <p class="fineprint">Reine Spaßfunktionen: keine echten Empfehlungen und kein Zugriff auf deine Watchlist.</p>
   </section>
 
   <!-- Ernster Teil -->
@@ -293,6 +334,36 @@
       }
     }, 400);
   });
+
+  // Kleine Zufallsgeneratoren ohne Wiederholung direkt hintereinander
+  const attachGenerator = (buttonId, outputId, lines) => {
+    let last = -1;
+    $(buttonId).addEventListener('click', () => {
+      const next = (last + 1 + Math.floor(Math.random() * (lines.length - 1))) % lines.length;
+      last = next;
+      $(outputId).textContent = lines[next];
+    });
+  };
+  attachGenerator('excuse-btn', 'excuse-out', [
+    'Ich kann jetzt nicht aufhören. Der Nebencharakter hat gerade verdächtig viel Hintergrundgeschichte bekommen.',
+    'Das ist keine Prokrastination. Ich prüfe die Langzeitstabilität meines Sofas.',
+    'Ich schaue beruflich. Mein Beruf weiß nur noch nichts davon.',
+    'Der Cliffhanger hat mich als Geisel genommen. Bitte schick Snacks.',
+    'Ich muss wissen, ob der Hund überlebt. Alles andere wäre unverantwortlich.',
+    'Mein Schlafrhythmus ist gerade in einer experimentellen Beta.',
+    'Ich habe der nächsten Folge schon zugesagt. Ich möchte nicht unhöflich sein.',
+    'Das Intro zu überspringen hat Zeit gespart. Die investiere ich sofort wieder.'
+  ]);
+  attachGenerator('oracle-btn', 'oracle-out', [
+    'Heute wird es ein Thriller. Der größte Spannungsmoment: Wer steht auf und holt die Snacks?',
+    'Das Orakel empfiehlt Fantasy. Dein Vorsatz, früh schlafen zu gehen, passt schon mal ins Genre.',
+    'Zeit für eine Komödie. Falls niemand lacht, lies einfach noch einmal diese Über-Seite.',
+    'Anime-Abend! Erst eine Folge zum Reinschauen. Dann versehentlich ein kompletter Trainings-Arc.',
+    'Ein Film unter 100 Minuten. Die Auswahl dauert voraussichtlich 120.',
+    'Science-Fiction. Für die gewagte Zukunftsvision, dass ihr euch heute noch auf einen Titel einigt.',
+    'Ein Rewatch ist erlaubt. Tu beim Plot-Twist bitte trotzdem überrascht.',
+    'Heute entscheidet die Person, die zuletzt Snacks geholt hat. Das Orakel fördert faire Arbeitsbedingungen.'
+  ]);
 
   // Konami-Code
   const code = ['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','b','a'];
