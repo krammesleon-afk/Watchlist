@@ -59,6 +59,12 @@
   .popcorn { position: fixed; top: -40px; font-size: 1.8rem; pointer-events: none; z-index: 100;
     animation: fall linear forwards; }
   @keyframes fall { to { transform: translateY(110vh) rotate(720deg); } }
+  .bubble-board { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 14px 0; }
+  .bubble-board button { min-height: 48px; border: 1px solid var(--glass-border); border-radius: 50%; background: radial-gradient(circle at 35% 30%, rgba(255,255,255,.3), rgba(0,0,0,.2)); color: var(--ink-dim); cursor: pointer; }
+  .bubble-board button:disabled { opacity: .35; cursor: default; background: rgba(0,0,0,.2); }
+  .nonsense-meter { width: 100%; accent-color: var(--accent-a); margin-top: 16px; }
+  #pet-rock { font-size: 3rem; text-align: center; padding: 14px; }
+  .bubble-board button:focus-visible, .nonsense-meter:focus-visible { outline: 2px solid var(--accent-a); outline-offset: 3px; }
 </style>
 <script src="/icons.js" defer></script>
 <script src="/auth-common.js" defer></script>
@@ -101,6 +107,12 @@
         <p>Unsere KI. Kann genau eine Sache: Sprüche klopfen. Hat trotzdem einen eigenen API-Endpunkt.</p></div>
       <div class="mini"><div class="big">🖥️</div><b>Der Server</b>
         <p>Arbeitet 24/7 ohne Pause, Urlaub oder Dank. Wir sagen dir lieber nicht, wie warm er gerade ist.</p></div>
+      <div class="mini"><div class="big">☕</div><b>Chief Energy Officer</b><p>Wird morgens befüllt und abends vergessen. Ohne ihn besteht der Quellcode nur aus müden Blicken.</p></div>
+      <div class="mini"><div class="big">🐹</div><b>Leitung Rechenzentrum</b><p>Betreibt den Server im Laufrad. Fordert seit Monaten einen ergonomischen Hamsterstuhl.</p></div>
+      <div class="mini"><div class="big">🪴</div><b>Feel-Good-Management</b><p>Hört bei jedem Meeting zu. Wächst trotzdem lieber Richtung Fenster.</p></div>
+      <div class="mini"><div class="big">🧦</div><b>Beauftragte für verschwundene Dateien</b><p>Hat jahrelange Erfahrung im spurlosen Verschwinden. Referenzen: jede zweite Socke.</p></div>
+      <div class="mini"><div class="big">🧊</div><b>Leitung Kühlung</b><p>Ein einzelner Eiswürfel mit großer Verantwortung. Aktuell im fließenden Übergang zur Selbstständigkeit.</p></div>
+      <div class="mini"><div class="big">📎</div><b>Projektmanagement</b><p>Hält alles zusammen, ohne den Überblick zu haben. Wurde trotzdem schon dreimal befördert.</p></div>
     </div>
   </section>
 
@@ -114,7 +126,12 @@
       <div class="mini"><div class="stat-num">0</div><p>Werbebanner. Wirklich null. Wir sind zu faul dafür.</p></div>
       <div class="mini"><div class="stat-num">3</div><p>Mal wurde diese Seite heute schon neu geschrieben</p></div>
       <div class="mini"><div class="stat-num">404</div><p>Lieblingszahl des Entwicklers</p></div>
+      <div class="mini"><div class="stat-num" id="stat-pointless">0</div><p>Neue Unsinn-Aktionen in dieser Sitzung. Endlich messbare Unproduktivität.</p></div>
+      <div class="mini"><div class="stat-num" id="stat-bubbles">0</div><p>Geplatzte Luftpolster. Der Versandabteilung gefällt das nicht.</p></div>
+      <div class="mini"><div class="stat-num">−12</div><p>Offene Aufgaben nach unserer sehr kreativen Buchhaltung.</p></div>
+      <div class="mini"><div class="stat-num">99,9 %</div><p>Frei erfundene Genauigkeit dieser Statistik.</p></div>
     </div>
+    <p class="fineprint">Spaßzahlen; die interaktiven Zähler gelten nur bis zum Neuladen dieser Seite.</p>
   </section>
 
   <!-- Timeline -->
@@ -196,6 +213,54 @@
     <div class="progress hidden" id="restart-progress"><div></div></div>
     <p class="muted" id="gag-out" aria-live="polite" style="margin-bottom:0"></p>
     <p class="faint" style="margin-bottom:0">Psst: Es gibt auch einen Geheimcode. ↑ ↑ ↓ ↓ …</p>
+  </section>
+
+  <!-- Nutzlose Geräte mit erstaunlich viel Bedienungsbedarf -->
+  <section class="panel">
+    <h2>🔬 Labor für interaktive Zeitverschwendung</h2>
+    <p class="muted">Hier darfst du etwas bedienen. Ob es etwas bringt, ist eine andere Frage.</p>
+    <div class="grid2">
+      <div class="mini">
+        <b>📦 Digitale Luftpolsterfolie</b>
+        <p>Zwölf Blasen. Kein Paket. Keine Verantwortung.</p>
+        <div class="bubble-board" id="bubble-board" role="group" aria-label="Zwölf Luftpolsterblasen">
+          <button type="button" aria-label="Blase 1 platzen lassen">○</button>
+          <button type="button" aria-label="Blase 2 platzen lassen">○</button>
+          <button type="button" aria-label="Blase 3 platzen lassen">○</button>
+          <button type="button" aria-label="Blase 4 platzen lassen">○</button>
+          <button type="button" aria-label="Blase 5 platzen lassen">○</button>
+          <button type="button" aria-label="Blase 6 platzen lassen">○</button>
+          <button type="button" aria-label="Blase 7 platzen lassen">○</button>
+          <button type="button" aria-label="Blase 8 platzen lassen">○</button>
+          <button type="button" aria-label="Blase 9 platzen lassen">○</button>
+          <button type="button" aria-label="Blase 10 platzen lassen">○</button>
+          <button type="button" aria-label="Blase 11 platzen lassen">○</button>
+          <button type="button" aria-label="Blase 12 platzen lassen">○</button>
+        </div>
+        <button type="button" class="btn" id="bubble-reset">Neue Folie auspacken</button>
+        <p id="bubble-out" role="status">Knacken bitte selbst dazudenken. Wir sparen am Tonbudget.</p>
+      </div>
+      <div class="mini">
+        <b>🔋 Produktivitätsregler</b>
+        <p>Mehr Leistung mit nur einer Bewegung. Sagt zumindest die Verpackung.</p>
+        <label for="motivation-range">Gewünschte Produktivität: <span id="motivation-value">50</span> %</label>
+        <input class="nonsense-meter" type="range" id="motivation-range" min="0" max="100" value="50">
+        <p id="motivation-out" role="status">50 %: Ein Tab Arbeit, ein Tab Trailer. Perfekte Balance.</p>
+      </div>
+      <div class="mini">
+        <b>🪨 Bürohaustier Herbert</b>
+        <p>Stubenrein. Wartungsarm. Seit Jahren in derselben Position.</p>
+        <div id="pet-rock" aria-hidden="true">🪨</div>
+        <button type="button" class="btn" id="rock-btn">Herbert streicheln</button>
+        <p id="rock-out" role="status">Herbert wartet regungslos. Er ist sehr professionell.</p>
+      </div>
+      <div class="mini">
+        <b>🧯 Digitaler Panikknopf</b>
+        <p>Wenn gerade alles zu viel ist: kurz symbolisch eskalieren.</p>
+        <button type="button" class="btn" id="panic-btn" style="margin-top:12px">Kontrolliert in Panik geraten</button>
+        <p id="panic-out" role="status">Status: verdächtig ruhig.</p>
+      </div>
+    </div>
   </section>
 
   <!-- Kleine Helfer für große Ausreden -->
@@ -569,6 +634,56 @@
     "Lebenswerkpreis für 200 vorgemerkte Titel und die mutige Entscheidung, dieselbe Serie noch einmal zu schauen.",
     "Offizielle Anerkennung: Du hast beim Einschlafen nur eine Szene verpasst. Sie dauerte 74 Minuten."
 ]);
+
+
+  // Lokales Unsinn-Labor: keine Speicherung und keine Serveraktionen.
+  let pointless = 0, popped = 0, pets = 0;
+  const countNonsense = () => { $('stat-pointless').textContent = (++pointless).toLocaleString('de-DE'); };
+  const bubbles = [...$('bubble-board').querySelectorAll('button')];
+  bubbles.forEach((button, index) => {
+    button.addEventListener('click', () => {
+      if (button.disabled) return;
+      button.disabled = true;
+      button.textContent = '×';
+      button.setAttribute('aria-label', 'Blase ' + (index + 1) + ' geplatzt');
+      $('stat-bubbles').textContent = (++popped).toLocaleString('de-DE');
+      countNonsense();
+      const remaining = bubbles.filter(b => !b.disabled).length;
+      $('bubble-out').textContent = remaining ? 'Plopp! Noch ' + remaining + ' Blasen bis zur nächsten wichtigen Aufgabe.' : 'Alle geplatzt. Deine Beförderung zur Verpackungsleitung ist beantragt.';
+    });
+  });
+  $('bubble-reset').addEventListener('click', () => {
+    bubbles.forEach((button, index) => {
+      button.disabled = false;
+      button.textContent = '○';
+      button.setAttribute('aria-label', 'Blase ' + (index + 1) + ' platzen lassen');
+    });
+    countNonsense();
+    $('bubble-out').textContent = 'Frische Folie. Nachhaltig aus denselben zwölf Knöpfen hergestellt.';
+  });
+  $('motivation-range').addEventListener('input', (event) => {
+    const value = Number(event.target.value);
+    $('motivation-value').textContent = value;
+    const message = value === 100 ? '100 %: Zu viel Leistung. Chef hält das ab jetzt für normal.'
+      : value >= 75 ? 'Ab 75 %: Du hast eine To-do-Liste erstellt. Darauf steht: To-do-Liste erstellen.'
+      : value >= 40 ? 'Ab 40 %: Ein Tab Arbeit, ein Tab Trailer. Perfekte Balance.'
+      : value > 0 ? 'Unter 40 %: Die Maus bewegt sich. Das muss fürs Erste reichen.'
+      : '0 %: Energiesparmodus. Selbst deine Ausreden machen Pause.';
+    $('motivation-out').textContent = message;
+  });
+  $('motivation-range').addEventListener('change', countNonsense);
+  $('rock-btn').addEventListener('click', () => {
+    countNonsense();
+    pets++;
+    const moods = ['Herbert sagt nichts. Du spürst trotzdem eine Verbindung.', 'Herbert hat sich nicht bewegt. Ein deutliches Zeichen von Vertrauen.', 'Herbert lernt gerade Sitz. Er ist ein Naturtalent.', 'Herbert möchte jetzt allein sein. Sieht genauso aus wie vorher.'];
+    $('rock-out').textContent = moods[(pets - 1) % moods.length] + ' Streicheleinheiten: ' + pets + '.';
+  });
+  let panicLevel = 0;
+  $('panic-btn').addEventListener('click', () => {
+    countNonsense();
+    const stages = ['Alarmstufe Gelb: Die Ente hat den Krisenstab übernommen.', 'Alarmstufe Orange: Alle laufen gedanklich im Kreis.', 'Alarmstufe Rot: Herbert bleibt als Einziger ruhig.', 'Entwarnung: Es war nur ein nicht gespeicherter Einkaufszettel.'];
+    $('panic-out').textContent = stages[panicLevel++ % stages.length];
+  });
 
   // Konami-Code
   const code = ['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','b','a'];
