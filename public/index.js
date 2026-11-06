@@ -310,11 +310,61 @@ async function loadWatchlistFromServer() {
     setWatchlistFromServer(data);
 
     renderWatchlist();
+    refreshStaleTmdbData();
   } catch(e) {
     console.error('Fehler beim Laden:', e);
     showSnackbar("Fehler beim Laden.");
     watchlist = [];
     renderWatchlist();
+  }
+}
+
+// TMDB erlaubt, Daten höchstens 6 Monate zwischenzuspeichern. Titel, Poster,
+// Bewertung, Genres und Beschreibung werden deshalb nach spätestens ~5 Monaten
+// neu von TMDB geholt. Pro Laden nur ein paar Einträge, damit das Rate-Limit
+// (40 Anfragen / 10 s) nicht greift; der Rest folgt beim nächsten Mal.
+const TMDB_MAX_AGE_MS = 150 * 24 * 60 * 60 * 1000;
+const TMDB_REFRESH_PER_LOAD = 15;
+let tmdbRefreshRunning = false;
+
+async function refreshStaleTmdbData() {
+  if(tmdbRefreshRunning) return;
+  tmdbRefreshRunning = true;
+  try {
+    const now = Date.now();
+    const stale = watchlist
+      .filter(i => !(now - (Date.parse(i.tmdbSyncedAt) || 0) < TMDB_MAX_AGE_MS))
+      .slice(0, TMDB_REFRESH_PER_LOAD);
+    let changed = false;
+    for(const item of stale) {
+      const type = (item.media_type || item.type) === 'anime' ? 'tv' : (item.media_type || item.type || 'movie');
+      try {
+        const res = await tmdbFetch(`/${type}/${item.id}`);
+        if(res.status === 429) break; // Rate-Limit: beim nächsten Laden weitermachen
+        if(!res.ok) continue;
+        const d = await res.json();
+        // Eintrag kann inzwischen gelöscht oder ersetzt worden sein
+        const cur = watchlist.find(w => watchlistKey(w) === watchlistKey(item));
+        if(!cur) continue;
+        cur.title = d.title || d.name || cur.title;
+        cur.name = d.name || d.title || cur.name;
+        cur.poster_path = d.poster_path || '';
+        cur.vote_average = d.vote_average || 0;
+        cur.genres_text = (d.genres || []).map(g => g.name).join(', ');
+        cur.overview = d.overview || '';
+        cur.tmdbSyncedAt = new Date().toISOString();
+        changed = true;
+      } catch(e) {
+        console.warn('TMDB-Aktualisierung fehlgeschlagen:', item.id, e);
+      }
+      await new Promise(r => setTimeout(r, 300));
+    }
+    if(changed) {
+      renderWatchlist();
+      await saveWatchlistToServer();
+    }
+  } finally {
+    tmdbRefreshRunning = false;
   }
 }
 
@@ -531,6 +581,7 @@ async function addToWatchlist(id, type) {
       seen: false,
       episodes: {},
       addedAt: new Date().toISOString(),
+      tmdbSyncedAt: new Date().toISOString(),
       overview: itemData.overview || ''
     });
 

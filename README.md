@@ -202,6 +202,14 @@ Datei-Drop verbindet die Geräte direkt (STUN, kein eigener TURN-Server). Im sel
 
 `sqlite3` ist bewusst auf Version 5 festgelegt. Version 6 braucht Node ≥ 20 und eine neuere glibc und startet auf dem aktuellen Server nicht.
 
+## Datenquellen & Nutzungsbedingungen
+
+Das Projekt ist nicht-kommerziell (keine Werbung, keine Bezahlung) und nutzt die kostenlosen APIs von TMDB, AniList und RAWG.
+
+- **TMDB** – Quellenangabe mit TMDB-Logo und dem Satz *„This product uses the TMDB API but is not endorsed or certified by TMDB.“* steht unten auf der Watchlist, der Freunde-Seite und im Footer der Startseite. TMDB erlaubt, Daten höchstens 6 Monate zu speichern: Titel, Poster, Bewertung, Genres und Beschreibung in der Watchlist werden deshalb nach spätestens 150 Tagen automatisch neu von TMDB geholt (Feld `tmdbSyncedAt`, ein paar Einträge pro Seitenaufruf).
+- **AniList** – Abfragen nur bei Bedarf, keine Massenabfragen, AniList dient nicht als Datenspeicher. „AniList“ kommt im Namen der Seite nicht vor.
+- **RAWG** – Quelle wird im selben Hinweis genannt.
+
 ## Changelog
 
 Alle Änderungen stehen im [CHANGELOG.md](CHANGELOG.md).

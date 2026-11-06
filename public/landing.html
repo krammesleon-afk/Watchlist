@@ -885,6 +885,8 @@
     text-align: center;
   }
   footer a { color: var(--ink-dim); }
+  footer .data-credits { margin-top: 8px; font-size: 0.75rem; }
+  footer .data-credits img { height: 12px; vertical-align: middle; margin-right: 6px; }
 
   /* ===== Feinschliff: Klick-Feedback & Scrollbars ===== */
   button { transition: transform 0.15s ease; }
@@ -1272,6 +1274,12 @@
 <footer>
   watchlist.satho-net.de &middot; <a href="/api/health" target="_blank" rel="noopener">Server-Status</a>
   &middot; <a href="https://netpurple.net" target="_blank" rel="noopener noreferrer">netpurple.net</a>
+  <div class="data-credits">
+    <a href="https://www.themoviedb.org/" target="_blank" rel="noopener noreferrer"><img src="https://www.themoviedb.org/assets/2/v4/logos/v2/blue_short-8e7b30f73a4020692ccca9c88bafe5dcb6f8a62a4c6bc55cd9ba82bb2cd95f6c.svg" alt="The Movie Database (TMDB)" height="12" loading="lazy"></a>
+    This product uses the TMDB API but is not endorsed or certified by TMDB.
+    &middot; Anime-Daten: <a href="https://anilist.co/" target="_blank" rel="noopener noreferrer">AniList</a>
+    &middot; Spieldaten: <a href="https://rawg.io/" target="_blank" rel="noopener noreferrer">RAWG</a>
+  </div>
 </footer>
 
 <!-- Login direkt auf der Startseite: setzt dasselbe Token wie die App-Seiten,

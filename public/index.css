@@ -2039,3 +2039,18 @@ html, body {
 .info-providers .ip-chip img { width: 26px; height: 26px; border-radius: 6px; object-fit: cover; }
 .info-providers .ip-empty { font-size: 0.8rem; color: var(--text-muted); }
 
+
+/* Quellenangabe TMDB / AniList / RAWG (Pflicht laut TMDB-Nutzungsbedingungen) */
+.data-credits {
+  margin: 32px auto 16px;
+  max-width: 720px;
+  padding: 0 16px;
+  text-align: center;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  opacity: 0.75;
+}
+.data-credits p { margin: 4px 0; }
+.data-credits a { color: inherit; text-decoration: underline; }
+.data-credits-logo { display: inline-block; text-decoration: none !important; }
+.data-credits-logo img { height: 14px; width: auto; vertical-align: middle; }

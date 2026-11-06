@@ -1,5 +1,13 @@
 # Watchlist App - Changelog 🎬
 
+## 6. November 2026 – Quellenangabe für TMDB, AniList und RAWG
+
+### ✨ Neu
+- **Quellenangabe** unten auf der Watchlist und der Freunde-Seite sowie im Footer der Startseite: TMDB-Logo, der von TMDB geforderte Satz „This product uses the TMDB API but is not endorsed or certified by TMDB.“ und Links zu TMDB, AniList und RAWG
+
+### 🔧 Technik
+- TMDB erlaubt höchstens 6 Monate Zwischenspeicherung: Watchlist-Einträge bekommen `tmdbSyncedAt`; Einträge, die älter als 150 Tage sind oder das Feld noch nicht haben, holt `refreshStaleTmdbData()` beim Laden neu von TMDB (max. 15 pro Aufruf, mit Pause, damit das Rate-Limit nicht greift)
+
 ## 2. November 2026 – App und Web getrennt, Benachrichtigungen in der App
 
 ### ✨ Neu
