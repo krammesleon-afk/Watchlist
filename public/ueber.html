@@ -219,6 +219,38 @@
     <p class="fineprint">Reine Spaßfunktionen: keine echten Empfehlungen und kein Zugriff auf deine Watchlist.</p>
   </section>
 
+  <!-- Vier weitere wissenschaftlich fragwürdige Freizeithelfer -->
+  <section class="panel">
+    <h2>🛋️ Die Zentrale für gepflegten Unsinn</h2>
+    <p class="muted">Vier weitere Dienste, die garantiert auf keiner vernünftigen Produkt-Roadmap standen.</p>
+    <div class="grid2">
+      <div class="mini">
+        <b>🍫 Snack-Notdienst</b>
+        <p>Wenn der Film läuft, aber die Schüssel leer ist.</p>
+        <button type="button" class="btn" id="snack-btn" style="margin-top:12px">Notfallplan erstellen</button>
+        <p id="snack-out" role="status">Bereitschaftsdienst: die Person am nächsten zur Küche.</p>
+      </div>
+      <div class="mini">
+        <b>👑 Dein Sofa-Adelstitel</b>
+        <p>Große Leistungen verdienen unnötig lange Titel.</p>
+        <button type="button" class="btn" id="title-btn" style="margin-top:12px">Titel verleihen</button>
+        <p id="title-out" role="status">Deine Krönung scheitert gerade an der fehlenden Fernbedienung.</p>
+      </div>
+      <div class="mini">
+        <b>🦆 Enten-Support</b>
+        <p>Unser Support hört zu. Besonders gut bei ausgeschaltetem Mikrofon.</p>
+        <button type="button" class="btn" id="support-btn" style="margin-top:12px">Ente um Rat fragen</button>
+        <p id="support-out" role="status">Alle Mitarbeiter sind gerade mit wichtigem Quaken beschäftigt.</p>
+      </div>
+      <div class="mini">
+        <b>🎯 Filmabend-Bingo</b>
+        <p>Eine kleine Mission für die nächste gemeinsame Runde.</p>
+        <button type="button" class="btn" id="bingo-btn" style="margin-top:12px">Mission ziehen</button>
+        <p id="bingo-out" role="status">Keine Einsätze, keine Punkte. Nur verdächtig bekannte Situationen.</p>
+      </div>
+    </div>
+  </section>
+
   <!-- Ernster Teil -->
   <section class="panel serious">
     <span class="tag">Ernster Teil – kein Witz</span>
@@ -364,6 +396,42 @@
     'Ein Rewatch ist erlaubt. Tu beim Plot-Twist bitte trotzdem überrascht.',
     'Heute entscheidet die Person, die zuletzt Snacks geholt hat. Das Orakel fördert faire Arbeitsbedingungen.'
   ]);
+
+  attachGenerator('snack-btn', 'snack-out', [
+    "Popcorn leer? Schüssel umdrehen. Vielleicht liegt darunter die Motivation zum Aufstehen.",
+    "Schokolade gefunden. Bitte vor dem Film portionieren. Haha. Als ob.",
+    "Nur noch Rosinen da. Filmabend wird wegen höherer Gewalt verschoben.",
+    "Nachschub organisieren: Wer zuletzt „Ich brauche nichts“ gesagt hat, geht in die Küche.",
+    "Chips direkt in eine Schüssel füllen. Das zählt als Kochen.",
+    "Kühlschrank zum dritten Mal öffnen. Vielleicht hat er inzwischen neue Inhalte geladen."
+]);
+
+  attachGenerator('title-btn', 'title-out', [
+    "Großherzog des übersprungenen Intros, Beschützer der letzten Chips.",
+    "Baronin von Autoplay, Erste ihres Namens und Letzte im Bett.",
+    "Erzmagier der 47 offenen Trailer-Tabs.",
+    "Ritter der Kuscheldecke, Bezwinger des nervigen Ladebalkens.",
+    "Kaiserliche Hoheit über Staffel drei und die linke Sofahälfte.",
+    "Lord Fernbedienung, Hüter des Lautstärkeknopfs und Feind der Werbung."
+]);
+
+  attachGenerator('support-btn', 'support-out', [
+    "Hast du versucht, das Problem ausführlich einer Ente zu erklären? Ich warte.",
+    "Ticket geprüft. Ursache: Der Computer macht Computersachen.",
+    "Bitte einmal neu starten. Nicht den Server. Deine Erwartungen.",
+    "Das Problem wurde an die zuständige Abteilung weitergewatschelt.",
+    "Priorität auf kritisch gesetzt. Die Ente trägt jetzt eine Warnweste.",
+    "Lösung gefunden: Es ging gestern noch. Wir empfehlen eine Zeitmaschine."
+]);
+
+  attachGenerator('bingo-btn', 'bingo-out', [
+    "Jemand sagt „Den kenne ich irgendwoher“ und verbringt die nächste Szene auf der Suche nach dem Schauspieler.",
+    "Alle sagen „Mir egal“. Jeder lehnt den ersten Vorschlag ab.",
+    "Die Snacks sind vor dem Vorspann leer. Mission erschreckend schnell erfüllt.",
+    "Jemand fragt „Wer ist das?“ Genau während erklärt wird, wer das ist.",
+    "Du pausierst für eine kurze Pause. 25 Minuten später diskutiert ihr immer noch über Essen.",
+    "Eine Person schläft ein und behauptet beim Abspann, alles mitbekommen zu haben."
+]);
 
   // Konami-Code
   const code = ['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','b','a'];
