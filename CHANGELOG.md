@@ -3,6 +3,7 @@
 ## 6. November 2026 – Quellenangabe für TMDB, AniList und RAWG
 
 ### ✨ Neu
+- **Über-Seite** (`/ueber.html`): Team, Mission, Firmengeschichte, Fake-Bewertungen, FAQ und völlig nutzlose Knöpfe (weglaufender Knopf, Popcorn-Regen, Party-Modus, Fake-Neustart, Konami-Code) – plus ernster Kasten mit den Quellenangaben. Verlinkt als Kachel und im Footer der Startseite
 - **Quellenangabe** unten auf der Watchlist und der Freunde-Seite sowie im Footer der Startseite: TMDB-Logo, der von TMDB geforderte Satz „This product uses the TMDB API but is not endorsed or certified by TMDB.“ und Links zu TMDB, AniList und RAWG
 
 ### 🔧 Technik

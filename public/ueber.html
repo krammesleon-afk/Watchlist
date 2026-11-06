@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Über – Satho-Net</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="/satho-page.css">
+<link rel="stylesheet" href="/icons.css">
+<style>
+  main { max-width: 820px; }
+  h1 .wobble { display: inline-block; animation: wobble 2.4s ease-in-out infinite; }
+  @keyframes wobble { 0%,100% { transform: rotate(-4deg); } 50% { transform: rotate(6deg) scale(1.08); } }
+
+  .panel h2 { margin-top: 0; }
+  .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+  .mini { background: rgba(0,0,0,0.25); border: 1px solid var(--glass-border); border-radius: 14px; padding: 14px; }
+  .mini .big { font-size: 2rem; line-height: 1.1; }
+  .mini b { display: block; margin-top: 6px; }
+  .mini p { margin: 4px 0 0; color: var(--ink-dim); font-size: 0.86rem; }
+
+  .stat-num { font-size: 1.8rem; font-weight: 700; font-variant-numeric: tabular-nums;
+    background: linear-gradient(90deg, var(--accent-a), var(--accent-b)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+  .timeline { list-style: none; margin: 0; padding: 0; border-left: 2px solid var(--glass-border); }
+  .timeline li { position: relative; padding: 0 0 14px 18px; }
+  .timeline li::before { content: ''; position: absolute; left: -7px; top: 8px; width: 12px; height: 12px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent-a), var(--accent-b)); }
+  .timeline .when { font-weight: 700; }
+  .timeline .what { color: var(--ink-dim); font-size: 0.9rem; }
+
+  details { border-bottom: 1px solid var(--glass-border); padding: 10px 0; }
+  details summary { cursor: pointer; font-weight: 600; }
+  details p { margin: 8px 0 0; color: var(--ink-dim); }
+
+  .review { font-style: italic; }
+  .review .who { font-style: normal; color: var(--ink-faint); font-size: 0.8rem; }
+  .stars { color: var(--accent-a); letter-spacing: 2px; }
+
+  .playground { position: relative; height: 140px; border: 1px dashed var(--glass-border); border-radius: 14px; overflow: hidden; }
+  #flee-btn { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); transition: left .15s, top .15s; }
+
+  .progress { height: 12px; border-radius: 6px; background: rgba(0,0,0,0.35); overflow: hidden; margin-top: 10px; }
+  .progress > div { height: 100%; width: 0; background: linear-gradient(90deg, var(--accent-a), var(--accent-b)); transition: width .2s; }
+
+  .serious { border: 1px solid var(--glass-border-hover); background: rgba(0,0,0,0.45); }
+  .serious img { height: 18px; vertical-align: middle; }
+  .serious .tag { display: inline-block; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em;
+    padding: 2px 8px; border-radius: 999px; border: 1px solid var(--glass-border); color: var(--ink-dim); margin-bottom: 8px; }
+
+  .panel a { color: var(--accent-a); }
+  .fineprint { font-size: 0.68rem; color: var(--ink-faint); line-height: 1.4; }
+
+  body.party { animation: hue 3s linear infinite; }
+  @keyframes hue { from { filter: hue-rotate(0deg); } to { filter: hue-rotate(360deg); } }
+  body.upside main { transform: rotate(180deg); transition: transform 1s; }
+  main { transition: transform 1s; }
+
+  .popcorn { position: fixed; top: -40px; font-size: 1.8rem; pointer-events: none; z-index: 100;
+    animation: fall linear forwards; }
+  @keyframes fall { to { transform: translateY(110vh) rotate(720deg); } }
+</style>
+<script src="/icons.js" defer></script>
+<script src="/auth-common.js" defer></script>
+<script src="/bg-dim.js"></script>
+</head>
+<body>
+
+<div id="bg-image-layer"></div>
+<div id="bg-scrim"></div>
+
+<main>
+  <div class="page-head">
+    <h1><span class="wobble">🍿</span> Über Satho-Net</h1>
+    <p>Die vermutlich beste Watchlist der Welt*. Gebaut von einer Person, getestet von fünf, benutzt von Mama.</p>
+    <p class="fineprint">* Welt = dieser Server im Keller. Umfrage unter 1 Person (dem Entwickler). Fehlertoleranz ± 100 %.</p>
+  </div>
+
+  <!-- Mission -->
+  <section class="panel">
+    <h2>🎯 Unsere Mission</h2>
+    <p>Wir wollen die Frage „Was gucken wir heute?“ endgültig lösen. Bisherige Ergebnisse: Die Frage wird jetzt
+       in einer App gestellt statt im Gruppenchat. Danach scrollt man trotzdem 45 Minuten und guckt am Ende
+       wieder <i>The Office</i>.</p>
+    <p class="muted">Langfristiges Ziel: Weltherrschaft. Kurzfristiges Ziel: dass der Login auch auf Mamas Handy klappt.</p>
+  </section>
+
+  <!-- Team -->
+  <section class="panel">
+    <h2>👥 Das Team</h2>
+    <div class="grid2">
+      <div class="mini"><div class="big">🧑‍💻</div><b>Chief Everything Officer</b>
+        <p>Entwickler, Designer, Admin, Support, Marketing und Praktikant in einer Person. Gehalt: Kaffee.</p></div>
+      <div class="mini"><div class="big">🐈</div><b>Head of Keyboard</b>
+        <p>Läuft regelmäßig über die Tastatur. Verantwortlich für ca. 30 % aller Commits. Die guten.</p></div>
+      <div class="mini"><div class="big">🦆</div><b>Senior Rubber Duck</b>
+        <p>Hört sich jeden Bug an, sagt nie etwas und hat trotzdem immer recht.</p></div>
+      <div class="mini"><div class="big">👩</div><b>Head of Quality Assurance (Mama)</b>
+        <p>Findet jeden Fehler, indem sie anruft und fragt, wo der Knopf hin ist.</p></div>
+      <div class="mini"><div class="big">🤖</div><b>Javis</b>
+        <p>Unsere KI. Kann genau eine Sache: Sprüche klopfen. Hat trotzdem einen eigenen API-Endpunkt.</p></div>
+      <div class="mini"><div class="big">🖥️</div><b>Der Server</b>
+        <p>Arbeitet 24/7 ohne Pause, Urlaub oder Dank. Wir sagen dir lieber nicht, wie warm er gerade ist.</p></div>
+    </div>
+  </section>
+
+  <!-- Stats -->
+  <section class="panel">
+    <h2>📊 Zahlen, die niemand wollte</h2>
+    <div class="grid2">
+      <div class="mini"><div class="stat-num" id="stat-wasted">0</div><p>Sekunden, die du gerade auf dieser Seite verschwendest</p></div>
+      <div class="mini"><div class="stat-num" id="stat-popcorn">0</div><p>Popcorn-Körner, die statistisch gerade irgendwo unters Sofa fallen</p></div>
+      <div class="mini"><div class="stat-num">∞</div><p>Folgen „nur noch eine“</p></div>
+      <div class="mini"><div class="stat-num">0</div><p>Werbebanner. Wirklich null. Wir sind zu faul dafür.</p></div>
+      <div class="mini"><div class="stat-num">3</div><p>Mal wurde diese Seite heute schon neu geschrieben</p></div>
+      <div class="mini"><div class="stat-num">404</div><p>Lieblingszahl des Entwicklers</p></div>
+    </div>
+  </section>
+
+  <!-- Timeline -->
+  <section class="panel">
+    <h2>📜 Firmengeschichte</h2>
+    <ul class="timeline">
+      <li><div class="when">Tag 1</div><div class="what">„Ich bau mir schnell eine Watchlist, dauert ein Wochenende.“</div></li>
+      <li><div class="when">Tag 2</div><div class="what">Watchlist fertig. Login hinzugefügt. Weil Login cool ist.</div></li>
+      <li><div class="when">Tag 14</div><div class="what">Spiele, Freunde, Rankings. Das Wochenende dauert noch an.</div></li>
+      <li><div class="when">Tag 60</div><div class="what">Watch-Party, Datei-Drop, Geheimlinks. Niemand hat danach gefragt. Alle benutzen es.</div></li>
+      <li><div class="when">Tag 90</div><div class="what">Eine Android-App. Weil ein Lesezeichen offenbar zu einfach war.</div></li>
+      <li><div class="when">Heute</div><div class="what">Diese Seite. Der absolute Höhepunkt der Softwareentwicklung.</div></li>
+      <li><div class="when">Morgen</div><div class="what">Alles neu schreiben, diesmal „aber richtig“.</div></li>
+    </ul>
+  </section>
+
+  <!-- Reviews -->
+  <section class="panel">
+    <h2>⭐ Das sagen unsere Nutzer</h2>
+    <div class="grid2">
+      <div class="mini review"><span class="stars">★★★★★</span>
+        <p>„Sehr schön gemacht. Ruf mal wieder an.“</p><span class="who">– Mama, verifizierter Kauf (kostenlos)</span></div>
+      <div class="mini review"><span class="stars">★★★★☆</span>
+        <p>„Hab 200 Filme auf der Watchlist und guck trotzdem keinen davon. 10/10.“</p><span class="who">– ein Kollege</span></div>
+      <div class="mini review"><span class="stars">★★★★★</span>
+        <p>„Miau.“</p><span class="who">– Head of Keyboard</span></div>
+      <div class="mini review"><span class="stars">★☆☆☆☆</span>
+        <p>„Hat mir gesagt, dass mein Lieblingsfilm nur 5,8 Punkte hat. Ich fühle mich angegriffen.“</p><span class="who">– anonym</span></div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="panel">
+    <h2>❓ Häufig gestellte Fragen</h2>
+    <details><summary>Ist das kostenlos?</summary>
+      <p>Ja. Du bezahlst nur mit deiner Lebenszeit, die du mit Serien verbringst.</p></details>
+    <details><summary>Gibt es eine Premium-Version?</summary>
+      <p>Ja, sie kostet 0 € und ist identisch. Fühlt sich aber teurer an, wenn du dabei einen Monokel trägst.</p></details>
+    <details><summary>Werdet ihr gehackt?</summary>
+      <p>Hoffentlich nicht. Die Passwörter sind gehasht, die Keys verschlüsselt, und der Hacker müsste erst mal an der Katze vorbei.</p></details>
+    <details><summary>Kann ich einen Bug melden?</summary>
+      <p>Das ist kein Bug, das ist ein Feature in Ausbildung.</p></details>
+    <details><summary>Warum heißt das Satho-Net?</summary>
+      <p>Alle guten Namen waren schon vergeben, und „Kellerprojekt 3000“ hat im Meeting knapp verloren.</p></details>
+    <details><summary>Wer hat die Fernbedienung?</summary>
+      <p>Sie ist im Sofa. Sie ist immer im Sofa.</p></details>
+  </section>
+
+  <!-- Interaktiver Unsinn -->
+  <section class="panel">
+    <h2>🕹️ Völlig nutzlose Knöpfe</h2>
+    <div class="playground"><button class="btn" id="flee-btn">Nicht klicken</button></div>
+    <div class="row" style="margin-top:14px">
+      <button class="btn" id="popcorn-btn">🍿 Popcorn-Regen</button>
+      <button class="btn" id="party-btn">🪩 Party-Modus</button>
+      <button class="btn" id="flip-btn">🙃 Seite umdrehen</button>
+      <button class="btn" id="restart-btn">🔁 Server neu starten</button>
+    </div>
+    <div class="progress hidden" id="restart-progress"><div></div></div>
+    <p class="muted" id="gag-out" aria-live="polite" style="margin-bottom:0"></p>
+    <p class="faint" style="margin-bottom:0">Psst: Es gibt auch einen Geheimcode. ↑ ↑ ↓ ↓ …</p>
+  </section>
+
+  <!-- Ernster Teil -->
+  <section class="panel serious">
+    <span class="tag">Ernster Teil – kein Witz</span>
+    <h2>📚 Datenquellen &amp; Hinweise</h2>
+    <p>
+      <a href="https://www.themoviedb.org/" target="_blank" rel="noopener noreferrer"><img
+        src="https://www.themoviedb.org/assets/2/v4/logos/v2/blue_short-8e7b30f73a4020692ccca9c88bafe5dcb6f8a62a4c6bc55cd9ba82bb2cd95f6c.svg"
+        alt="The Movie Database (TMDB)" loading="lazy"></a>
+    </p>
+    <p><b>This product uses the TMDB API but is not endorsed or certified by TMDB.</b></p>
+    <ul class="muted">
+      <li>Film-, Serien- und Anime-Daten sowie Bilder stammen von <a href="https://www.themoviedb.org/" target="_blank" rel="noopener noreferrer">The Movie Database (TMDB)</a>.</li>
+      <li>Zusätzliche Anime-Infos stammen von <a href="https://anilist.co/" target="_blank" rel="noopener noreferrer">AniList</a>. Satho-Net ist kein Angebot von AniList.</li>
+      <li>Spieldaten stammen von <a href="https://rawg.io/" target="_blank" rel="noopener noreferrer">RAWG</a>.</li>
+      <li>Satho-Net ist ein privates, nicht-kommerzielles Projekt: keine Werbung, keine Bezahlung.</li>
+      <li>Gespeicherte TMDB-Daten werden spätestens nach 150 Tagen automatisch neu von TMDB geholt.</li>
+      <li>Quellcode: <a href="https://github.com/krammesleon-afk/Watchlist" target="_blank" rel="noopener noreferrer">GitHub</a></li>
+    </ul>
+  </section>
+
+  <p class="fineprint">Mit dem Lesen dieser Seite erklärst du dich damit einverstanden, dass Ananas auf Pizza eine
+    legitime Meinung ist, dass man Serien nicht mit Folge 1 der zweiten Staffel anfängt, und dass „Nur noch eine Folge“
+    keine verbindliche Zeitangabe darstellt. Diese Klausel ist rechtlich genauso bindend wie das Versprechen,
+    heute früh ins Bett zu gehen.</p>
+</main>
+
+<footer>
+  watchlist.satho-net.de &middot; <a href="/">Startseite</a>
+</footer>
+
+
+<script src="/satho-page.js"></script>
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const out = (msg) => { $('gag-out').textContent = msg; };
+
+  // Zähler
+  const start = Date.now();
+  setInterval(() => {
+    const s = Math.floor((Date.now() - start) / 1000);
+    $('stat-wasted').textContent = s.toLocaleString('de-DE');
+    $('stat-popcorn').textContent = Math.floor(s * 3.7 + 1234).toLocaleString('de-DE');
+  }, 250);
+
+  // Weglaufender Knopf
+  const flee = $('flee-btn');
+  const box = flee.parentElement;
+  let dodges = 0;
+  const dodge = () => {
+    dodges++;
+    const maxX = box.clientWidth - flee.offsetWidth;
+    const maxY = box.clientHeight - flee.offsetHeight;
+    flee.style.transform = 'none';
+    flee.style.left = Math.random() * maxX + 'px';
+    flee.style.top = Math.random() * maxY + 'px';
+    const lines = ['Nö.', 'Zu langsam!', 'Fast …', 'Gib auf.', 'Ich hab Zeit.', 'Der Knopf hat Angst vor dir.'];
+    flee.textContent = lines[dodges % lines.length];
+  };
+  flee.addEventListener('mouseenter', dodge);
+  flee.addEventListener('click', () => {
+    out('Okay, du hast gewonnen. Es passiert absolut nichts. Glückwunsch zu ' + dodges + ' Fehlversuchen.');
+    flee.textContent = 'Nicht klicken';
+  });
+
+  // Popcorn-Regen
+  const rain = (n = 40, emojis = ['🍿']) => {
+    for (let i = 0; i < n; i++) {
+      const p = document.createElement('div');
+      p.className = 'popcorn';
+      p.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+      p.style.left = Math.random() * 100 + 'vw';
+      p.style.animationDuration = 2 + Math.random() * 3 + 's';
+      p.style.animationDelay = Math.random() * 1.5 + 's';
+      document.body.appendChild(p);
+      p.addEventListener('animationend', () => p.remove());
+    }
+  };
+  $('popcorn-btn').addEventListener('click', () => { rain(); out('Wer räumt das jetzt auf? Genau. Du.'); });
+
+  $('party-btn').addEventListener('click', () => {
+    const on = document.body.classList.toggle('party');
+    out(on ? 'PARTY! 🪩 (Nachbarn wurden nicht informiert.)' : 'Party vorbei. Jemand muss noch die Flaschen wegbringen.');
+  });
+
+  $('flip-btn').addEventListener('click', () => {
+    const on = document.body.classList.toggle('upside');
+    out(on ? 'Australien-Modus aktiviert. 🦘' : 'Zurück auf der Nordhalbkugel.');
+  });
+
+  // Fake-Neustart
+  let restarting = false;
+  $('restart-btn').addEventListener('click', () => {
+    if (restarting) return;
+    restarting = true;
+    const bar = $('restart-progress');
+    const fill = bar.firstElementChild;
+    bar.classList.remove('hidden');
+    const steps = ['Hamster wird geweckt …', 'Kabel werden geschüttelt …', 'Ein- und wieder ausstecken …',
+                   'Frage den Server freundlich …', 'Warte auf Kaffee …'];
+    let pct = 0, i = 0;
+    const t = setInterval(() => {
+      pct = Math.min(99, pct + Math.random() * 14);
+      fill.style.width = pct + '%';
+      out(steps[i++ % steps.length] + ' ' + Math.floor(pct) + ' %');
+      if (pct >= 99) {
+        clearInterval(t);
+        setTimeout(() => {
+          out('Bei 99 % hängen geblieben, wie immer. Keine Sorge: Der Server wurde nie wirklich neu gestartet. 😇');
+          bar.classList.add('hidden'); fill.style.width = '0';
+          restarting = false;
+        }, 1200);
+      }
+    }, 400);
+  });
+
+  // Konami-Code
+  const code = ['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','b','a'];
+  let pos = 0;
+  document.addEventListener('keydown', (e) => {
+    pos = (e.key === code[pos]) ? pos + 1 : (e.key === code[0] ? 1 : 0);
+    if (pos === code.length) {
+      pos = 0;
+      rain(80, ['🍿', '🎬', '🐈', '🦆', '📺', '🎮']);
+      out('🎉 Cheat aktiviert: +30 Leben, unendlich Popcorn, und du darfst heute den Film aussuchen.');
+    }
+  });
+
+  // Klick auf die Überschrift
+  let clicks = 0;
+  document.querySelector('h1').addEventListener('click', () => {
+    clicks++;
+    if (clicks === 5) out('Hör auf, auf die Überschrift zu klicken. Sie ist nicht interaktiv. … Okay, ein bisschen schon.');
+    if (clicks === 10) { rain(30, ['🤨']); out('Jetzt reicht es aber.'); }
+  });
+})();
+</script>
+</body>
+</html>
