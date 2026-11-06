@@ -283,6 +283,39 @@
     </div>
   </section>
 
+  <!-- Weitere streng inoffizielle Freizeitdienste -->
+  <section class="panel">
+    <h2>🚀 Das Ministerium für fortgeschrittenes Rumliegen</h2>
+    <p class="muted">Vier neue Angebote. Vom Sofa geprüft, von jeder vernünftigen Behörde abgelehnt.</p>
+    <div class="grid2">
+      <div class="mini">
+        <b>⚡ Deine Anime-Attacke</b>
+        <p>Jeder Endboss fürchtet einen gut ausgeschlafenen Hauptcharakter. Leider bist du keiner.</p>
+        <button type="button" class="btn" id="attack-btn" style="margin-top:12px">Attacke freischalten</button>
+        <p id="attack-out" role="status">Bitte vor dem Rufen die Nachbarn informieren.</p>
+      </div>
+      <div class="mini">
+        <b>🔮 Sofa-Horoskop</b>
+        <p>Die Sterne stehen günstig. Dein Rücken hätte trotzdem gern ein anderes Kissen.</p>
+        <button type="button" class="btn" id="horoscope-btn" style="margin-top:12px">Sterne befragen</button>
+        <p id="horoscope-out" role="status">Aszendent: Kuscheldecke.</p>
+      </div>
+      <div class="mini">
+        <b>🌦️ Filmabend-Wetterdienst</b>
+        <p>Unsere Vorhersage kommt direkt aus einem Blick unter die Decke.</p>
+        <button type="button" class="btn" id="weather-btn" style="margin-top:12px">Vorhersage abrufen</button>
+        <p id="weather-out" role="status">Aktuell: gemütlich mit vereinzeltem Tütenrascheln.</p>
+      </div>
+      <div class="mini">
+        <b>🏅 Amt für besondere Nichtleistungen</b>
+        <p>Auch nichts zu erledigen muss erst einmal geschafft werden.</p>
+        <button type="button" class="btn" id="award-btn" style="margin-top:12px">Urkunde ausstellen</button>
+        <p id="award-out" role="status">Die Jury sucht gerade einen funktionierenden Drucker.</p>
+      </div>
+    </div>
+    <p class="fineprint">Alles nur Spaß: keine echten Vorhersagen, Urkunden oder übernatürlichen Fähigkeiten.</p>
+  </section>
+
   <!-- Ernster Teil -->
   <section class="panel serious">
     <span class="tag">Ernster Teil – kein Witz</span>
@@ -499,6 +532,42 @@
     "Installiere zusätzliche Gemütlichkeit. Bitte die Decke nicht entfernen.",
     "Warte auf Rückmeldung von der Motivation. Zuletzt online: gestern.",
     "100 % erreicht. Lade vorsichtshalber noch ein bisschen weiter."
+]);
+
+  attachGenerator('attack-btn', 'attack-out', [
+    "VERBOTENE TECHNIK: Tausend Tabs des ewigen Aufschiebens! Dein Gegner vergisst, was er eigentlich wollte.",
+    "ULTIMATIVE SOFA-EXPANSION! Alle Gegenstände im Raum liegen jetzt knapp außerhalb deiner Reichweite.",
+    "ATEM DER LETZTEN CHIPS, SIEBTE FORM! Die Tüte ist leer, aber du greifst trotzdem noch einmal hinein.",
+    "ERNSTER SCHLAG: INTRO ÜBERSPRINGEN! Du gewinnst 90 Sekunden und verlierst anschließend fünf Stunden.",
+    "DOMAIN EXPANSION: WLAN OHNE BALKEN! Selbst der Bösewicht muss kurz zum Router gehen.",
+    "FINALER CLIFFHANGER-BRECHER! Du liest den Manga weiter. Der Schlaf verliert durch technischen K. o."
+]);
+
+  attachGenerator('horoscope-btn', 'horoscope-out', [
+    "Merkur steht im Autoplay. Triff heute keine großen Entscheidungen nach dem dritten Cliffhanger.",
+    "Für dein Sternzeichen beginnt eine romantische Phase: Das Ladekabel reicht bis zum Sofa.",
+    "Der Mond rät zur Vorsicht. Jemand könnte fragen, ob ihr auch mal etwas anderes schauen könnt.",
+    "Dein Glücksplanet ist heute der Lieferdienst. Deine Glückszahl ist die Bestellnummer.",
+    "Eine unerwartete Begegnung steht bevor: Du findest die Fernbedienung unter deinem eigenen Bein.",
+    "Saturn verlässt das Haus der Produktivität. Er nimmt die Jogginghose mit."
+]);
+
+  attachGenerator('weather-btn', 'weather-out', [
+    "Heute Abend dichte Deckenfelder. Örtlich kommt es zu kräftigen Popcornschauern.",
+    "Ein Tief namens „Mir egal“ trifft auf das Hoch „Den haben wir schon gesehen“. Filmbeginn ungewiss.",
+    "Starke emotionale Turbulenzen im Staffelfinale. Taschentücher griffbereit halten.",
+    "Die Sichtweite sinkt auf null: Jemand steht genau vor dem Fernseher.",
+    "Ab Mitternacht zunehmende Müdigkeit. Die gefühlte Uhrzeit bleibt bei „Ist doch noch früh“.",
+    "Warnung vor Glatteis: Wer auf die letzte Chipstüte tritt, verliert sämtliche diplomatischen Beziehungen."
+]);
+
+  attachGenerator('award-btn', 'award-out', [
+    "Hiermit ausgezeichnet: Du hast einen Film ausgewählt, bevor das Essen kalt wurde. Die Forschung ist alarmiert.",
+    "Ehrenmedaille für tapferes „Das war doch der aus …“, ohne den Satz jemals zu beenden.",
+    "Goldene Fernbedienung für das Auffinden exakt der falschen Fernbedienung.",
+    "Verdienstkreuz am Sofaband: Du hast einen Trailer angesehen, ohne direkt drei weitere zu starten.",
+    "Lebenswerkpreis für 200 vorgemerkte Titel und die mutige Entscheidung, dieselbe Serie noch einmal zu schauen.",
+    "Offizielle Anerkennung: Du hast beim Einschlafen nur eine Szene verpasst. Sie dauerte 74 Minuten."
 ]);
 
   // Konami-Code
