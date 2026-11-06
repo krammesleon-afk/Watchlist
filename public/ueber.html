@@ -251,6 +251,38 @@
     </div>
   </section>
 
+  <!-- Noch mehr streng unseriöse Dienste -->
+  <section class="panel">
+    <h2>🎭 Abteilung für dramatische Freizeitprobleme</h2>
+    <p class="muted">Für alles, was zwischen Vorspann und „Was war das bitte für ein Ende?“ passiert.</p>
+    <div class="grid2">
+      <div class="mini">
+        <b>🙉 Spoiler-Schutzbehörde</b>
+        <p>Für Leute, die mit „Ich verrate nichts, aber …“ anfangen.</p>
+        <button type="button" class="btn" id="spoiler-btn" style="margin-top:12px">Schutzmaßnahme anfordern</button>
+        <p id="spoiler-out" role="status">Spoilerwarnstufe: Jemand hat das Buch gelesen.</p>
+      </div>
+      <div class="mini">
+        <b>🚑 Cliffhanger-Notaufnahme</b>
+        <p>Akute Beschwerden nach einem sehr unpassenden Abspann.</p>
+        <button type="button" class="btn" id="cliffhanger-btn" style="margin-top:12px">Diagnose erhalten</button>
+        <p id="cliffhanger-out" role="status">Bitte bleiben Sie ruhig. Staffel zwei ist bestimmt schon angekündigt.</p>
+      </div>
+      <div class="mini">
+        <b>🎬 Film-Pitch-Mixer</b>
+        <p>Hollywood hat angerufen. Wir waren gerade in der Küche.</p>
+        <button type="button" class="btn" id="pitch-btn" style="margin-top:12px">Blockbuster erfinden</button>
+        <p id="pitch-out" role="status">Budget: drei Euro und ein sehr motivierter Toaster.</p>
+      </div>
+      <div class="mini">
+        <b>⏳ Premium-Ladebildschirm</b>
+        <p>Endlich warten, ohne dass im Hintergrund irgendetwas passiert.</p>
+        <button type="button" class="btn" id="loading-btn" style="margin-top:12px">Sinnlos warten</button>
+        <p id="loading-out" role="status">Bereit. Was für einen Ladebildschirm ungewöhnlich ist.</p>
+      </div>
+    </div>
+  </section>
+
   <!-- Ernster Teil -->
   <section class="panel serious">
     <span class="tag">Ernster Teil – kein Witz</span>
@@ -431,6 +463,42 @@
     "Jemand fragt „Wer ist das?“ Genau während erklärt wird, wer das ist.",
     "Du pausierst für eine kurze Pause. 25 Minuten später diskutiert ihr immer noch über Essen.",
     "Eine Person schläft ein und behauptet beim Abspann, alles mitbekommen zu haben."
+]);
+
+  attachGenerator('spoiler-btn', 'spoiler-out', [
+    "Schutzmaßnahme: Wer „Warte mal ab“ sagt, muss für den Rest des Films die Snacks geräuschlos nachfüllen.",
+    "Zeugenprogramm aktiviert. Du heißt jetzt Folge 1 und weißt von nichts.",
+    "Bitte keine bedeutungsvollen Blicke zum Nebencharakter. Auch deine Augen können spoilern.",
+    "Der Satz „Du wirst das Ende lieben“ wurde vorsorglich beschlagnahmt.",
+    "Sicherheitsabstand zu Kommentaren hergestellt. Leider steht dein bester Freund direkt neben dir.",
+    "Die Behörde empfiehlt: Trailer nach 20 Sekunden schließen. Der Rest ist oft schon der ganze Film."
+]);
+
+  attachGenerator('cliffhanger-btn', 'cliffhanger-out', [
+    "Diagnose: akuter Noch-eine-Folge-Reflex. Die Fernbedienung bitte langsam ablegen.",
+    "Der Patient sagt „Das können die doch nicht machen“. Die Autoren konnten offenbar doch.",
+    "Wir verschreiben eine Decke und jemanden, der deine Theorien anhört.",
+    "Befund: Staffel beendet, Fragen vervierfacht. Klassischer Fall.",
+    "Die nächste Staffel kommt bald. „Bald“ ist hier leider ein Fantasy-Begriff.",
+    "Notfallkontakt erreicht. Er hat die Serie noch nicht gesehen und versteht dein Problem nicht."
+]);
+
+  attachGenerator('pitch-btn', 'pitch-out', [
+    "Ein IT-Praktikant entdeckt, dass der Endboss nur auf einen Passwort-Reset wartet. Titel: Root des Bösen.",
+    "Eine Katze übernimmt ein Raumschiff. Die Menschheit darf bleiben, solange sie keine geschlossenen Türen baut.",
+    "Ein Held kann die Zeit anhalten, aber nur während Werbung läuft. Die Weltrettung wird von drei Spots unterbrochen.",
+    "Sieben Freunde wollen einen Film auswählen. Ein nervenaufreibender Thriller in Echtzeit. Laufzeit: sechs Stunden.",
+    "Ein Drache bewacht keinen Schatz, sondern das WLAN-Passwort. Der Ritter bringt einen LAN-Adapter.",
+    "Ein Kühlschrank entwickelt Bewusstsein und fragt bei jedem Öffnen: „Suchst du schon wieder eine neue Serie?“"
+]);
+
+  attachGenerator('loading-btn', 'loading-out', [
+    "Synchronisiere die Sofakissen mit der Erdrotation …",
+    "Suche den Anfang des Ladekabels. Das Ende wurde bereits gefunden.",
+    "Berechne, wie viele Folgen in „ganz kurz“ passen … Ergebnis wird verdrängt.",
+    "Installiere zusätzliche Gemütlichkeit. Bitte die Decke nicht entfernen.",
+    "Warte auf Rückmeldung von der Motivation. Zuletzt online: gestern.",
+    "100 % erreicht. Lade vorsichtshalber noch ein bisschen weiter."
 ]);
 
   // Konami-Code
