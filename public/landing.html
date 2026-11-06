@@ -363,6 +363,33 @@
   }
   a.card:hover .arrow { transform: translate(3px, -3px); color: var(--ink); }
 
+  .card.card-info { cursor: default; }
+  .infos-stats {
+    list-style: none;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px 10px;
+    margin: 2px 0 0;
+    padding: 0;
+  }
+  .infos-stats li { display: flex; flex-direction: column; align-items: center; }
+  .infos-value {
+    font-size: 1.2rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    background: linear-gradient(90deg, var(--accent-a), var(--accent-b));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .infos-label {
+    font-size: 0.66rem;
+    color: var(--ink-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-top: 2px;
+  }
+
   .card.soon {
     border-style: dashed;
     color: var(--ink-faint);
@@ -1247,6 +1274,16 @@
       <h3>Über</h3>
       <p>Das Team, die Mission und völlig nutzlose Knöpfe. Plus Quellenangaben.</p>
     </a>
+    <div class="card card-info">
+      <span class="icon">📊</span>
+      <h3>Infos</h3>
+      <ul class="infos-stats">
+        <li><span class="infos-value" data-stat="lines_of_code">&ndash;</span><span class="infos-label">Codezeilen</span></li>
+        <li><span class="infos-value" data-stat="files">&ndash;</span><span class="infos-label">Dateien</span></li>
+        <li><span class="infos-value" data-stat="commits">&ndash;</span><span class="infos-label">Commits</span></li>
+        <li><span class="infos-value" data-stat="entries">&ndash;</span><span class="infos-label">DB-Einträge</span></li>
+      </ul>
+    </div>
     <!-- Nur im Browser: In der App selbst und auf dem iPhone ergibt der Link keinen Sinn -->
     <a class="card" href="https://github.com/krammesleon-afk/Watchlist/releases/latest/download/satho-net.apk" id="app-card" hidden>
       <span class="arrow">↓</span>
@@ -1282,7 +1319,7 @@
   &middot; <a href="/ueber.html">Über</a>
   &middot; <a href="https://netpurple.net" target="_blank" rel="noopener noreferrer">netpurple.net</a>
   <div class="data-credits">
-    <a href="https://www.themoviedb.org/" target="_blank" rel="noopener noreferrer"><img src="https://www.themoviedb.org/assets/2/v4/logos/v2/blue_short-8e7b30f73a4020692ccca9c88bafe5dcb6f8a62a4c6bc55cd9ba82bb2cd95f6c.svg" alt="The Movie Database (TMDB)" height="12" loading="lazy"></a>
+    <a href="https://www.themoviedb.org/" target="_blank" rel="noopener noreferrer"><img src="/img/tmdb-logo.svg" alt="The Movie Database (TMDB)" height="12" loading="lazy"></a>
     This product uses the TMDB API but is not endorsed or certified by TMDB.
     &middot; Anime-Daten: <a href="https://anilist.co/" target="_blank" rel="noopener noreferrer">AniList</a>
     &middot; Spieldaten: <a href="https://rawg.io/" target="_blank" rel="noopener noreferrer">RAWG</a>
@@ -2581,5 +2618,20 @@
   ]).then(bootDashboard, bootDashboard);
 </script>
 
+<script>
+  // Infos-Kachel: Zahlen vom Server holen (Platzhalter bleibt bei Fehler stehen)
+  (async () => {
+    try {
+      const res = await fetch('/api/stats');
+      if (!res.ok) return;
+      const data = await res.json();
+      const fmt = new Intl.NumberFormat('de-DE');
+      for (const el of document.querySelectorAll('.infos-value[data-stat]')) {
+        const v = data[el.dataset.stat];
+        if (typeof v === 'number') el.textContent = fmt.format(v);
+      }
+    } catch (e) {}
+  })();
+</script>
 </body>
 </html>

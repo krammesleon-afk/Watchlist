@@ -1266,6 +1266,63 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Infos-Kachel auf der Startseite: Codezeilen, Dateien, Commits, DB-Einträge.
+// Öffentlich, enthält nur Zahlen. Ergebnis wird 10 Minuten zwischengespeichert.
+const { execFile } = require('child_process');
+const fs = require('fs');
+const STATS_TTL_MS = 10 * 60 * 1000;
+const STATS_SKIP = /\.(png|jpe?g|gif|webp|ico|svg|apk|jks|gpg|db|zip|woff2?)$|(^|\/)package-lock\.json$/i;
+let statsCache = { at: 0, data: null, pending: null };
+
+function git(args) {
+  return new Promise((resolve) => {
+    execFile('git', args, { cwd: __dirname, maxBuffer: 16 * 1024 * 1024 }, (err, stdout) => resolve(err ? null : stdout));
+  });
+}
+
+function countDbEntries() {
+  return new Promise((resolve) => {
+    db.all("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'", [], (err, tables) => {
+      if (err || !tables.length) return resolve(null);
+      const sql = tables.map(t => `SELECT COUNT(*) AS n FROM "${t.name.replace(/"/g, '""')}"`).join(' UNION ALL ');
+      db.all(sql, [], (err2, rows) => resolve(err2 ? null : rows.reduce((sum, r) => sum + r.n, 0)));
+    });
+  });
+}
+
+async function computeStats() {
+  const [lsFiles, commitCount, entries] = await Promise.all([
+    git(['ls-files']), git(['rev-list', '--count', 'HEAD']), countDbEntries()
+  ]);
+  let files = null, linesOfCode = null;
+  if (lsFiles) {
+    const list = lsFiles.split('\n').filter(Boolean);
+    files = list.length;
+    linesOfCode = 0;
+    for (const f of list) {
+      if (STATS_SKIP.test(f)) continue;
+      try {
+        const text = await fs.promises.readFile(path.join(__dirname, f), 'utf8');
+        linesOfCode += text.split('\n').filter(l => l.trim()).length;
+      } catch (e) { /* Datei fehlt lokal – überspringen */ }
+    }
+  }
+  const commits = commitCount ? parseInt(commitCount, 10) : null;
+  return { lines_of_code: linesOfCode, files, commits, entries };
+}
+
+app.get('/api/stats', async (req, res) => {
+  if (!statsCache.data || Date.now() - statsCache.at > STATS_TTL_MS) {
+    statsCache.pending = statsCache.pending || computeStats().then(d => {
+      statsCache = { at: Date.now(), data: d, pending: null };
+      return d;
+    }).catch(() => { statsCache.pending = null; return statsCache.data; });
+    await statsCache.pending;
+  }
+  res.set('Cache-Control', 'public, max-age=300');
+  res.json(statsCache.data || {});
+});
+
 // ============ ROUTES: TMDB PROXY ============
 
 const TMDB_SEARCH_TYPES = ['movie', 'tv', 'person', 'multi'];
@@ -1547,6 +1604,7 @@ app.listen(PORT, () => {
   console.log(' 💾 POST /api/watchlist - Watchlist speichern');
   console.log(' 🗑️ DELETE /api/user - User löschen');
   console.log(' 💓 GET /api/health - Server-Status');
+  console.log(' 📊 GET /api/stats - Zahlen für die Infos-Kachel');
   console.log('\n🎬 Watchlist-App bereit!\n');
 });
 
