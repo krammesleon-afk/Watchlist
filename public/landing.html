@@ -1100,6 +1100,61 @@
     .account-btn .account-label-long { display: none; }
   }
 
+
+  /* Startseite: Hauptbereiche zuerst, zusätzliche Angebote auf Abruf. */
+  .hub-heading { margin: 0 0 26px; }
+  .hub-eyebrow { margin: 0 0 8px; color: var(--accent-a); font-size: .75rem; letter-spacing: .12em; text-transform: uppercase; }
+  .hub-heading h1 { margin: 0; font-size: clamp(1.8rem, 4vw, 2.7rem); line-height: 1.15; letter-spacing: -.035em; }
+  .hub-heading > p:last-child { margin: 12px 0 0; color: var(--ink-dim); font-size: .95rem; }
+  .hub-section-title { margin: 0 0 14px; font-size: .85rem; font-weight: 600; color: var(--ink-dim); }
+  .hub-main-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .hub-main-grid .card { min-width: 0; padding: 24px 20px; }
+  .hub-main-grid .card:first-child { border-color: rgba(246,162,76,.45); background: linear-gradient(140deg, rgba(246,162,76,.15), rgba(239,93,168,.08)); }
+  .hub-main-grid .card p { font-size: .82rem; }
+  .hub-utilities { display: grid; gap: 10px; margin-top: 24px; }
+  .hub-group { border: 1px solid var(--glass-border); border-radius: 16px; background: var(--glass); }
+  .hub-group > summary { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 20px; cursor: pointer; list-style: none; }
+  .hub-group > summary::-webkit-details-marker { display: none; }
+  .hub-group > summary strong { display: block; font-size: .95rem; font-weight: 600; }
+  .hub-group > summary small { display: block; margin-top: 3px; color: var(--ink-dim); font-size: .78rem; }
+  .hub-chevron { color: var(--accent-a); font-size: 1.3rem; transition: transform .2s; }
+  .hub-group[open] > summary .hub-chevron { transform: rotate(180deg); }
+  .hub-group > summary:hover { background: rgba(255,255,255,.035); border-radius: 16px; }
+  .hub-group > summary:focus-visible, a.card:focus-visible, .hub-shortcut-help > summary:focus-visible { outline: 2px solid var(--accent-a); outline-offset: 4px; }
+  .hub-compact-grid { padding: 0 14px 14px; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .hub-compact-grid .card { padding: 18px; gap: 6px; min-width: 0; border-radius: 12px; backdrop-filter: none; }
+  .hub-compact-grid .card .icon { width: 34px; height: 34px; border-radius: 10px; font-size: 1.15rem; }
+  .hub-compact-grid .card h3 { font-size: .94rem; }
+  .hub-compact-grid .card p { font-size: .8rem; }
+  .hub-compact-grid .card .arrow { top: 16px; right: 16px; }
+  .hub-compact-grid a.card:hover { transform: translateY(-2px); }
+  .hub-shortcuts { margin-top: 28px; }
+  .hub-shortcuts .section-label { margin-top: 0; }
+  .hub-shortcut-help { margin: -4px 0 14px; color: var(--ink-faint); font-size: .76rem; }
+  .hub-shortcut-help > summary { cursor: pointer; width: fit-content; }
+  .hub-shortcut-help .shortcuts-hint { margin: 8px 0 0; }
+  .hub-daily { margin-top: 28px; border-top: 1px solid var(--glass-border); padding-top: 20px; }
+  .hub-daily .widget { padding: 16px 20px; }
+  .hub-daily #clock-time { font-size: 2rem; }
+  .hub-daily #clock-date { font-size: .8rem; margin-top: 6px; }
+  .hub-daily .weather-temp { font-size: 1.7rem; }
+  .hub-daily .weather-icon { font-size: 2rem; }
+  @media (max-width: 760px) {
+    .hub-main-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .hub-main-grid .card { padding: 20px 16px; }
+    .hub-main-grid .card .arrow { top: 18px; right: 16px; }
+  }
+  @media (max-width: 440px) {
+    .hub-compact-grid { grid-template-columns: minmax(0, 1fr); }
+    .hub-group > summary { padding: 16px; }
+    .hub-heading { margin-bottom: 20px; }
+    .hub-main-grid .card h3 { font-size: .96rem; }
+    .hub-main-grid .card .icon { width: 40px; height: 40px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .hub-chevron, .hub-main-grid .card, .hub-compact-grid .card { transition: none; }
+  }
+
 </style>
 
 <!-- Icon-Set (ersetzt die Emojis der Oberfläche) -->
@@ -1171,6 +1226,11 @@
 </div>
 
 <main>
+  <header class="hub-heading">
+    <p class="hub-eyebrow">Dein persönlicher Startpunkt</p>
+    <h1>Was hast du heute vor?</h1>
+    <p>Deine Sammlung, deine Leute und die passenden Werkzeuge.</p>
+  </header>
   <form class="search-bar" id="search-bar">
     <select id="search-engine" title="Suchmaschine wählen">
       <option value="google">Google</option>
@@ -1179,8 +1239,105 @@
     <input type="text" id="search-input" placeholder="Suchen…" autocomplete="off">
     <button type="submit" title="Suchen">➜</button>
   </form>
+  <section class="hub-primary" aria-labelledby="hub-primary-title">
+    <h2 class="hub-section-title" id="hub-primary-title">Deine Bereiche</h2>
+    <div class="grid hub-main-grid"><a class="card" href="/index.html">
+      <span class="arrow">↗</span>
+      <span class="icon">📺</span>
+      <h3>Watchlist</h3>
+      <p>Filme, Serien &amp; Anime tracken, ranken und mit Freunden teilen.</p>
+    </a>
+<a class="card" href="/games.html">
+      <span class="arrow">↗</span>
+      <span class="icon">🎮</span>
+      <h3>Games</h3>
+      <p>Deine Spielesammlung und Empfehlungen über RAWG.</p>
+    </a>
+<a class="card" href="/friends.html">
+      <span class="arrow">↗</span>
+      <span class="icon">👥</span>
+      <h3>Freunde</h3>
+      <p>Freundschaften verwalten und gemeinsame Listen führen.</p>
+    </a>
+<a class="card" href="/party.html">
+      <span class="arrow">↗</span>
+      <span class="icon">🍿</span>
+      <h3>Watch-Party</h3>
+      <p>YouTube-Videos und Trailer gemeinsam und synchron schauen – mit Chat.</p>
+    </a></div>
+  </section>
+  <div class="hub-utilities">
+    <details class="hub-group">
+      <summary><span><strong>Werkzeuge &amp; Teilen</strong><small>Datei-Drop, Geheimlinks, Push und Werkzeugkasten</small></span><span class="hub-chevron" aria-hidden="true">⌄</span></summary>
+      <div class="grid hub-compact-grid"><a class="card" href="/tools.html">
+      <span class="arrow">↗</span>
+      <span class="icon"><span data-ic="wrench"></span></span>
+      <h3>Werkzeugkasten</h3>
+      <p>Gesammelte Werkzeuge für Rechner, Netz und Linux.</p>
+    </a>
+<a class="card" href="/drop.html">
+      <span class="arrow">↗</span>
+      <span class="icon">📡</span>
+      <h3>Datei-Drop</h3>
+      <p>Dateien und Text direkt zwischen deinen Geräten und zu Freunden schicken.</p>
+    </a>
+<a class="card" href="/secret.html">
+      <span class="arrow">↗</span>
+      <span class="icon">🔐</span>
+      <h3>Geheimlink</h3>
+      <p>Passwörter sicher teilen – der Link funktioniert genau einmal.</p>
+    </a>
+<a class="card" href="/push.html">
+      <span class="arrow">↗</span>
+      <span class="icon">🔔</span>
+      <h3>Benachrichtigungen</h3>
+      <p>Push aufs Handy bei Logins, Freundschaftsanfragen oder aus eigenen Skripten.</p>
+    </a></div>
+    </details>
+    <details class="hub-group">
+      <summary><span><strong>Mehr von Satho-Net</strong><small>Über das Projekt, Android-App und Infos</small></span><span class="hub-chevron" aria-hidden="true">⌄</span></summary>
+      <div class="grid hub-compact-grid"><a class="card" href="/ueber.html">
+      <span class="arrow">↗</span>
+      <span class="icon">🍿</span>
+      <h3>Über</h3>
+      <p>Das Team, die Mission und völlig nutzlose Knöpfe. Plus Quellenangaben.</p>
+    </a>
+<a class="card" href="https://github.com/krammesleon-afk/Watchlist/releases/latest/download/satho-net.apk" id="app-card" hidden>
+      <span class="arrow">↓</span>
+      <span class="icon">📱</span>
+      <h3>Android-App</h3>
+      <p>Satho-Net als App: eigene Leiste unten, Benachrichtigungen, Einladungslinks öffnen direkt in der App.</p>
+    </a>
+<a class="card" href="/cockpit.html" id="cockpit-card" hidden>
+      <span class="arrow">↗</span>
+      <span class="icon"><span data-ic="chartLine"></span></span>
+      <h3>Server-Cockpit</h3>
+      <p>CPU, RAM, Temperatur und Netzwerk live – dazu der Verlauf der Ausfälle.</p>
+    </a>
+<div class="card card-info">
+      <span class="icon">📊</span>
+      <h3>Infos</h3>
+      <ul class="infos-stats">
+        <li><span class="infos-value" data-stat="lines_of_code">&ndash;</span><span class="infos-label">Codezeilen</span></li>
+        <li><span class="infos-value" data-stat="files">&ndash;</span><span class="infos-label">Dateien</span></li>
+        <li><span class="infos-value" data-stat="commits">&ndash;</span><span class="infos-label">Commits</span></li>
+        <li><span class="infos-value" data-stat="entries">&ndash;</span><span class="infos-label">DB-Einträge</span></li>
+      </ul>
+    </div></div>
+    </details>
+  </div>
+  <section class="hub-shortcuts" aria-label="Deine Shortcuts">
+      <div class="section-label section-label-row">
+    <span>Deine Shortcuts</span>
+    <a id="bookmarklet-link" class="bookmarklet-btn" href="#" draggable="true" title="In die Lesezeichen-Leiste ziehen">🔖 Seite hinzufügen</a>
+  </div>
+  <details class="hub-shortcut-help"><summary>Seiten schneller hinzufügen</summary><p class="shortcuts-hint">Den Button "🔖 Seite hinzufügen" per Drag &amp; Drop in deine Lesezeichen-Leiste ziehen. Danach auf jeder Webseite draufklicken &ndash; sie landet automatisch hier.</p></details>
+  <div class="shortcuts-grid" id="shortcuts-grid"></div>
 
-  <div class="widget-grid">
+
+  </section>
+  <section class="hub-daily" aria-label="Uhrzeit und Wetter">
+      <div class="widget-grid">
     <div class="widget">
       <div id="clock-time">--:--</div>
       <div id="clock-date"></div>
@@ -1211,108 +1368,12 @@
     </div>
   </div>
 
-  <div class="section-label section-label-row">
-    <span>Deine Shortcuts</span>
-    <a id="bookmarklet-link" class="bookmarklet-btn" href="#" draggable="true" title="In die Lesezeichen-Leiste ziehen">🔖 Seite hinzufügen</a>
-  </div>
-  <p class="shortcuts-hint">Den Button "🔖 Seite hinzufügen" per Drag &amp; Drop in deine Lesezeichen-Leiste ziehen. Danach auf jeder Webseite draufklicken &ndash; sie landet automatisch hier.</p>
-  <div class="shortcuts-grid" id="shortcuts-grid"></div>
 
-  <div class="section-label">Verfügbar</div>
-  <div class="grid">
-    <a class="card" href="/index.html">
-      <span class="arrow">↗</span>
-      <span class="icon">📺</span>
-      <h3>Watchlist</h3>
-      <p>Filme, Serien &amp; Anime tracken, ranken und mit Freunden teilen.</p>
-    </a>
-    <a class="card" href="/games.html">
-      <span class="arrow">↗</span>
-      <span class="icon">🎮</span>
-      <h3>Games</h3>
-      <p>Deine Spielesammlung und Empfehlungen über RAWG.</p>
-    </a>
-    <a class="card" href="/friends.html">
-      <span class="arrow">↗</span>
-      <span class="icon">👥</span>
-      <h3>Freunde</h3>
-      <p>Freundschaften verwalten und gemeinsame Listen führen.</p>
-    </a>
-    <a class="card" href="/tools.html">
-      <span class="arrow">↗</span>
-      <span class="icon"><span data-ic="wrench"></span></span>
-      <h3>Werkzeugkasten</h3>
-      <p>Gesammelte Werkzeuge für Rechner, Netz und Linux.</p>
-    </a>
-    <a class="card" href="/drop.html">
-      <span class="arrow">↗</span>
-      <span class="icon">📡</span>
-      <h3>Datei-Drop</h3>
-      <p>Dateien und Text direkt zwischen deinen Geräten und zu Freunden schicken.</p>
-    </a>
-    <a class="card" href="/party.html">
-      <span class="arrow">↗</span>
-      <span class="icon">🍿</span>
-      <h3>Watch-Party</h3>
-      <p>YouTube-Videos und Trailer gemeinsam und synchron schauen – mit Chat.</p>
-    </a>
-    <a class="card" href="/secret.html">
-      <span class="arrow">↗</span>
-      <span class="icon">🔐</span>
-      <h3>Geheimlink</h3>
-      <p>Passwörter sicher teilen – der Link funktioniert genau einmal.</p>
-    </a>
-    <a class="card" href="/push.html">
-      <span class="arrow">↗</span>
-      <span class="icon">🔔</span>
-      <h3>Benachrichtigungen</h3>
-      <p>Push aufs Handy bei Logins, Freundschaftsanfragen oder aus eigenen Skripten.</p>
-    </a>
-    <a class="card" href="/ueber.html">
-      <span class="arrow">↗</span>
-      <span class="icon">🍿</span>
-      <h3>Über</h3>
-      <p>Das Team, die Mission und völlig nutzlose Knöpfe. Plus Quellenangaben.</p>
-    </a>
-    <div class="card card-info">
-      <span class="icon">📊</span>
-      <h3>Infos</h3>
-      <ul class="infos-stats">
-        <li><span class="infos-value" data-stat="lines_of_code">&ndash;</span><span class="infos-label">Codezeilen</span></li>
-        <li><span class="infos-value" data-stat="files">&ndash;</span><span class="infos-label">Dateien</span></li>
-        <li><span class="infos-value" data-stat="commits">&ndash;</span><span class="infos-label">Commits</span></li>
-        <li><span class="infos-value" data-stat="entries">&ndash;</span><span class="infos-label">DB-Einträge</span></li>
-      </ul>
-    </div>
-    <!-- Nur im Browser: In der App selbst und auf dem iPhone ergibt der Link keinen Sinn -->
-    <a class="card" href="https://github.com/krammesleon-afk/Watchlist/releases/latest/download/satho-net.apk" id="app-card" hidden>
-      <span class="arrow">↓</span>
-      <span class="icon">📱</span>
-      <h3>Android-App</h3>
-      <p>Satho-Net als App: eigene Leiste unten, Benachrichtigungen, Einladungslinks öffnen direkt in der App.</p>
-    </a>
-    <script>
-      document.getElementById('app-card').hidden = /SathoNetApp|iPhone|iPad|iPod/.test(navigator.userAgent);
-    </script>
-    <!-- Nur für Entwickler-Accounts sichtbar (siehe showCockpitCard) -->
-    <a class="card" href="/cockpit.html" id="cockpit-card" hidden>
-      <span class="arrow">↗</span>
-      <span class="icon"><span data-ic="chartLine"></span></span>
-      <h3>Server-Cockpit</h3>
-      <p>CPU, RAM, Temperatur und Netzwerk live – dazu der Verlauf der Ausfälle.</p>
-    </a>
-  </div>
-
-  <div class="section-label">Bald verfügbar</div>
-  <div class="grid">
-    <div class="card soon">
-      <span class="icon">🚀</span>
-      <h3>Nächstes Projekt</h3>
-      <p>Hier landet dein nächstes Tool, sobald es fertig ist.</p>
-    </div>
-  </div>
-
+  </section>
 </main>
+<script>
+document.getElementById('app-card').hidden = /SathoNetApp|iPhone|iPad|iPod/.test(navigator.userAgent);
+</script>
 
 <footer>
   watchlist.satho-net.de &middot; <a href="/api/health" target="_blank" rel="noopener">Server-Status</a>
